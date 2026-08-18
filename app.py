@@ -8,11 +8,14 @@ VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "downforce2026")
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 client = OpenAI()
-def gerar_resposta_ia(texto):
-    response = client.responses.create(
-        model="gpt-5.6-luna",
-        reasoning={"effort": "low"},
-        instructions="""
+conversas = {}
+def gerar_resposta_ia(texto, sender):
+    previous_id = conversas.get(sender)
+
+    parametros = {
+        "model": "gpt-5.6-luna",
+        "reasoning": {"effort": "low"},
+        "instructions": """
 És o assistente virtual da Downforce, uma empresa portuguesa especializada em jantes automóveis.
 
 Responde sempre em português de Portugal, de forma simpática, profissional e curta.
@@ -28,10 +31,17 @@ Quando necessário, recolhe:
 Faz apenas uma pergunta de cada vez.
 
 Nunca inventes preços, stock ou compatibilidades.
-Se não tiveres informação suficiente, pede os dados necessários.
+Se já tens uma informação dada anteriormente pelo cliente, não a voltes a perguntar.
 """,
-        input=texto
-    )
+        "input": texto
+    }
+
+    if previous_id:
+        parametros["previous_response_id"] = previous_id
+
+    response = client.responses.create(**parametros)
+
+    conversas[sender] = response.id
 
     return response.output_text
 @app.route("/", methods=["GET"])
@@ -70,7 +80,7 @@ def webhook():
             text = message["text"]["body"].strip()
 
             try:
-                resposta = gerar_resposta_ia(text)
+                resposta = gerar_resposta_ia(text, sender)
             except Exception as e:
                 print("OPENAI ERROR:", repr(e), flush=True)
                 resposta = "Desculpe, neste momento não consigo responder automaticamente. Um colaborador da Downforce irá ajudá-lo."
