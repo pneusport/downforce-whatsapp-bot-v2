@@ -145,7 +145,13 @@ def webhook():
 
         if message.get("type") == "text":
             text = message["text"]["body"].strip()
-
+            if text.lower() == "teste imagem":
+                send_image(
+                    sender,
+                    "https://store.downforce.pt/Imgs/produtos/000/21/49/DF-6116-1.jpg",
+                    'DF-6116-1 — 17"'
+                )
+                return "EVENT_RECEIVED", 200
             try:
                 resposta = gerar_resposta_ia(text, sender)
             except Exception as e:
