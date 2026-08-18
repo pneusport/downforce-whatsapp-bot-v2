@@ -1,14 +1,39 @@
 from flask import Flask, request
 import os
 import requests
-
+from openai import OpenAI
 app = Flask(__name__)
 
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "downforce2026")
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
+client = OpenAI()
+def gerar_resposta_ia(texto):
+    response = client.responses.create(
+        model="gpt-5.6-luna",
+        reasoning={"effort": "low"},
+        instructions="""
+És o assistente virtual da Downforce, uma empresa portuguesa especializada em jantes automóveis.
 
+Responde sempre em português de Portugal, de forma simpática, profissional e curta.
 
+O teu objetivo é ajudar o cliente a encontrar jantes adequadas para o seu carro.
+
+Quando necessário, recolhe:
+1. Marca do carro
+2. Modelo
+3. Ano
+4. Medida de jante pretendida
+
+Faz apenas uma pergunta de cada vez.
+
+Nunca inventes preços, stock ou compatibilidades.
+Se não tiveres informação suficiente, pede os dados necessários.
+""",
+        input=texto
+    )
+
+    return response.output_text
 @app.route("/", methods=["GET"])
 def home():
     return "Downforce WhatsApp Bot está online!", 200
@@ -41,15 +66,14 @@ def webhook():
         message = value["messages"][0]
         sender = message["from"]
 
-        if message.get("type") == "text":
+              if message.get("type") == "text":
             text = message["text"]["body"].strip()
 
-            resposta = (
-                "Olá! 👋 Bem-vindo à Downforce.\n\n"
-                "Sou o assistente de jantes da Downforce. 🚗\n\n"
-                "Para começarmos, diga-me a marca do seu carro.\n"
-                "Exemplo: Audi"
-            )
+            try:
+                resposta = gerar_resposta_ia(text)
+            except Exception as e:
+                print("OPENAI ERROR:", repr(e), flush=True)
+                resposta = "Desculpe, neste momento não consigo responder automaticamente. Um colaborador da Downforce irá ajudá-lo."
 
             send_message(sender, resposta)
 
@@ -57,7 +81,6 @@ def webhook():
         print("ERRO:", str(e), flush=True)
 
     return "EVENT_RECEIVED", 200
-
 
 def send_message(to, text):
     url = f"https://graph.facebook.com/v26.0/{PHONE_NUMBER_ID}/messages"
