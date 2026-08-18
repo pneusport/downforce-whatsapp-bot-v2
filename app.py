@@ -28,7 +28,7 @@ def cb_compativel(cb_jante, cb_carro):
 
     return True, True
     def atualizar_dados_cliente(texto, sender):
-    estado = dados_clientes.get(sender, {
+        estado = dados_clientes.get(sender, {
         "marca": None,
         "modelo": None,
         "ano": None,
