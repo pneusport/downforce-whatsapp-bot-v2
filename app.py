@@ -86,7 +86,34 @@ def webhook():
                 resposta = "Desculpe, neste momento não consigo responder automaticamente. Um colaborador da Downforce irá ajudá-lo."
 
             send_message(sender, resposta)
+def send_image(to, image_url, caption=""):
+    url = f"https://graph.facebook.com/v26.0/{PHONE_NUMBER_ID}/messages"
 
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "image",
+        "image": {
+            "link": image_url,
+            "caption": caption
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=payload)
+
+    print(
+        "META IMAGE RESPONSE:",
+        response.status_code,
+        response.text,
+        flush=True
+    )
+
+    return response
     except Exception as e:
         print("ERRO:", str(e), flush=True)
 
