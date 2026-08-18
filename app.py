@@ -26,6 +26,70 @@ def cb_compativel(cb_jante, cb_carro):
         return True, False
 
     return True, True
+def resolver_modelos_site(marca, modelo_cliente, ano):
+    base = "https://store.downforce.pt"
+    url = f"{base}/ajax/produtos/utils"
+
+    r = requests.get(
+        url,
+        params={
+            "a": "veiculos-modelos",
+            "marca": marca.upper()
+        },
+        timeout=20
+    )
+    r.raise_for_status()
+
+    soup = BeautifulSoup(r.text, "html.parser")
+
+    modelo_procura = modelo_cliente.upper().strip()
+    ano = int(ano)
+
+    encontrados = []
+
+    for option in soup.find_all("option"):
+        modelo_site = (option.get("value") or "").strip()
+
+        if not modelo_site:
+            continue
+
+        if modelo_procura not in modelo_site.upper():
+            continue
+
+        r_anos = requests.get(
+            url,
+            params={
+                "a": "veiculos-anos",
+                "marca": marca.upper(),
+                "modelo": modelo_site
+            },
+            timeout=20
+        )
+        r_anos.raise_for_status()
+
+        soup_anos = BeautifulSoup(r_anos.text, "html.parser")
+
+        for option_ano in soup_anos.find_all("option"):
+            intervalo = (option_ano.get("value") or "").strip()
+
+            if "|" not in intervalo:
+                continue
+
+            inicio, fim = intervalo.split("|", 1)
+
+            try:
+                inicio = int(inicio)
+                fim = int(fim)
+            except ValueError:
+                continue
+
+            if inicio <= ano <= fim:
+                encontrados.append({
+                    "modelo": modelo_site,
+                    "intervalo": intervalo
+                })
+
+    return encontrados    
 def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
     base = "https://store.downforce.pt"
 
@@ -61,6 +125,11 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
         novos = 0
 
         for bloco in blocos:
+            stock_el = bloco.select_one(".prod-tag-stock")
+            stock_texto = stock_el.get_text(" ", strip=True).lower() if stock_el else ""
+
+            if stock_texto and "sem stock" in stock_texto:
+                continue
             nome_el = bloco.select_one(".prod-list-name")
             img = bloco.select_one("img")
 
