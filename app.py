@@ -2,6 +2,9 @@ from flask import Flask, request
 import os
 import requests
 from openai import OpenAI
+from bs4 import BeautifulSoup
+import re
+from urllib.parse import urljoin
 app = Flask(__name__)
 
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "downforce2026")
@@ -9,6 +12,70 @@ WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 client = OpenAI()
 conversas = {}
+def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
+    url = "https://store.downforce.pt/pt/produtos/jantes"
+
+    params = {
+        "marca_vei": marca,
+        "modelo_vei": modelo,
+        "ano_vei": intervalo_ano
+    }
+
+    r = requests.get(url, params=params, timeout=20)
+    r.raise_for_status()
+
+    soup = BeautifulSoup(r.text, "html.parser")
+
+    resultados = []
+    vistos = set()
+
+    for img in soup.find_all("img"):
+        alt = (img.get("alt") or "").strip()
+
+        # Só queremos produtos que sejam jantes
+        if not alt.upper().startswith("JANTE "):
+            continue
+
+        # Ex.: 7X17, 8X18, 8.5X19
+        if not re.search(rf"X{tamanho}\b", alt.upper()):
+            continue
+
+        src = img.get("data-src") or img.get("src")
+
+        if not src:
+            continue
+
+        # Tenta obter a fotografia original /Imgs/produtos/...
+        match = re.search(
+            r"src=(/Imgs/produtos/[^&\"']+\.(?:jpg|jpeg|png|webp))",
+            src,
+            re.IGNORECASE
+        )
+
+        if match:
+            image_url = urljoin(
+                "https://store.downforce.pt",
+                match.group(1)
+            )
+        else:
+            image_url = urljoin(
+                "https://store.downforce.pt",
+                src
+            )
+
+        if image_url in vistos:
+            continue
+
+        vistos.add(image_url)
+
+        nome = alt.replace("JANTE ", "", 1)
+
+        resultados.append({
+            "nome": nome,
+            "imagem": image_url
+        })
+
+    return resultados
 def gerar_resposta_ia(texto, sender):
     previous_id = conversas.get(sender)
 
@@ -86,6 +153,46 @@ def webhook():
                 resposta = "Desculpe, neste momento não consigo responder automaticamente. Um colaborador da Downforce irá ajudá-lo."
 
             send_message(sender, resposta)
+    except Exception as e:
+        print("ERRO:", str(e), flush=True)
+
+    return "EVENT_RECEIVED", 200
+
+
+def send_message(to, text):
+    url = f"https://graph.facebook.com/v26.0/{PHONE_NUMBER_ID}/messages"
+
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "text",
+        "text": {
+            "body": text
+        }
+    }
+
+    response = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        timeout=20
+    )
+
+    print(
+        "META RESPONSE:",
+        response.status_code,
+        response.text,
+        flush=True
+    )
+
+    return response
+
+
 def send_image(to, image_url, caption=""):
     url = f"https://graph.facebook.com/v26.0/{PHONE_NUMBER_ID}/messages"
 
@@ -104,7 +211,12 @@ def send_image(to, image_url, caption=""):
         }
     }
 
-    response = requests.post(url, headers=headers, json=payload)
+    response = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        timeout=20
+    )
 
     print(
         "META IMAGE RESPONSE:",
@@ -114,12 +226,6 @@ def send_image(to, image_url, caption=""):
     )
 
     return response
-    except Exception as e:
-        print("ERRO:", str(e), flush=True)
-
-    return "EVENT_RECEIVED", 200
-
-def send_message(to, text):
     url = f"https://graph.facebook.com/v26.0/{PHONE_NUMBER_ID}/messages"
 
     headers = {
