@@ -66,7 +66,7 @@ def webhook():
         message = value["messages"][0]
         sender = message["from"]
 
-              if message.get("type") == "text":
+        if message.get("type") == "text":
             text = message["text"]["body"].strip()
 
             try:
