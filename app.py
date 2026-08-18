@@ -225,7 +225,7 @@ def webhook():
 
         if message.get("type") == "text":
             text = message["text"]["body"].strip()
-                        if text.lower() == "teste imagem":
+            if text.lower() == "teste imagem":
 
                 jantes = buscar_jantes_site(
                     "AUDI",
