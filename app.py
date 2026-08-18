@@ -224,9 +224,9 @@ def webhook():
         sender = message["from"]
 
         if message.get("type") == "text":
-            text = message["text"]["body"].strip()
-            if text.lower() == "teste imagem":
+           text = message["text"]["body"].strip()
 
+            if text.lower() == "teste imagem":
                 jantes = buscar_jantes_site(
                     "AUDI",
                     "A3 8V",
@@ -246,9 +246,7 @@ def webhook():
                     f"Encontrei {len(jantes)} modelos compatíveis. Vou mostrar algumas opções:"
                 )
 
-                # Primeiro teste: máximo 10 fotografias
-                for jante in jantes[:10]:
-
+                for jante in jantes[:5]:
                     legenda = jante["nome"]
 
                     send_image(
@@ -259,7 +257,18 @@ def webhook():
 
                 return "EVENT_RECEIVED", 200
 
+            try:
+                resposta = gerar_resposta_ia(text, sender)
+            except Exception as e:
+                print("OPENAI ERROR:", repr(e), flush=True)
+                resposta = "Desculpe, neste momento não consigo responder automaticamente. Um colaborador da Downforce irá ajudá-lo."
 
+            send_message(sender, resposta)
+
+    except Exception as e:
+        print("ERRO:", str(e), flush=True)
+
+    return "EVENT_RECEIVED", 200
 def send_message(to, text):
     url = f"https://graph.facebook.com/v26.0/{PHONE_NUMBER_ID}/messages"
 
