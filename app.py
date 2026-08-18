@@ -12,8 +12,28 @@ WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 client = OpenAI()
 conversas = {}
+def cb_compativel(cb_jante, cb_carro):
+    try:
+        cb_jante = float(str(cb_jante).replace(",", "."))
+        cb_carro = float(str(cb_carro).replace(",", "."))
+    except (ValueError, TypeError):
+        return False, False
+
+    if cb_jante < cb_carro:
+        return False, False
+
+    if abs(cb_jante - cb_carro) < 0.05:
+        return True, False
+
+    return True, True
 def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
-    url = "https://store.downforce.pt/pt/produtos/jantes"
+    base = "https://store.downforce.pt"
+
+    session = requests.Session()
+
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0"
+    })
 
     params = {
         "marca_vei": marca,
@@ -21,59 +41,119 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
         "ano_vei": intervalo_ano
     }
 
-    r = requests.get(url, params=params, timeout=20)
-    r.raise_for_status()
+    # Primeira página com o veículo selecionado
+    r = session.get(
+        f"{base}/pt/produtos/jantes",
+        params=params,
+        timeout=20
+    )
 
-    soup = BeautifulSoup(r.text, "html.parser")
+    r.raise_for_status()
 
     resultados = []
     vistos = set()
 
-    for img in soup.find_all("img"):
-        alt = (img.get("alt") or "").strip()
+    def processar_html(html):
+        soup = BeautifulSoup(html, "html.parser")
 
-        # Só queremos produtos que sejam jantes
-        if not alt.upper().startswith("JANTE "):
-            continue
+        blocos = soup.select(".prod-list-col")
 
-        # Ex.: 7X17, 8X18, 8.5X19
-        if not re.search(rf"X{tamanho}\b", alt.upper()):
-            continue
+        novos = 0
 
-        src = img.get("data-src") or img.get("src")
+        for bloco in blocos:
+            nome_el = bloco.select_one(".prod-list-name")
+            img = bloco.select_one("img")
 
-        if not src:
-            continue
+            if not nome_el or not img:
+                continue
 
-        # Tenta obter a fotografia original /Imgs/produtos/...
-        match = re.search(
-            r"src=(/Imgs/produtos/[^&\"']+\.(?:jpg|jpeg|png|webp))",
-            src,
-            re.IGNORECASE
+            nome = nome_el.get_text(" ", strip=True)
+
+            # Só tamanho pedido pelo cliente
+            if not re.search(
+                rf"X{re.escape(str(tamanho))}\b",
+                nome.upper()
+            ):
+                continue
+
+            src = img.get("data-src") or img.get("src") or ""
+
+            match = re.search(
+                r"src=(/Imgs/produtos/[^&\"']+\.(?:jpg|jpeg|png|webp))",
+                src,
+                re.IGNORECASE
+            )
+
+            if match:
+                image_url = urljoin(base, match.group(1))
+            else:
+                image_url = urljoin(base, src)
+
+            if image_url in vistos:
+                continue
+
+            vistos.add(image_url)
+
+            # PCD
+            pcd_match = re.search(
+                r"(\d+)X([\d.]+)",
+                nome.upper()
+            )
+
+            # CB
+            cb_match = re.search(
+                r"\bCB\s*([\d.,]+)",
+                nome.upper()
+            )
+
+            # ET
+            et_match = re.search(
+                r"\bET\s*(-?\d+(?:[.,]\d+)?)",
+                nome.upper()
+            )
+
+            resultados.append({
+                "nome": nome.replace("JANTE ", "", 1),
+                "imagem": image_url,
+                "pcd": pcd_match.group(0) if pcd_match else None,
+                "cb": cb_match.group(1) if cb_match else None,
+                "et": et_match.group(1) if et_match else None
+            })
+
+            novos += 1
+
+        return len(blocos)
+
+    # Página 1
+    processar_html(r.text)
+
+    # "Ver mais": páginas seguintes
+    for pagina in range(2, 31):
+
+        ajax_url = (
+            f"{base}/ajax/produtos/jantes/"
+            f"page/{pagina}/&onlyrows=true"
         )
 
-        if match:
-            image_url = urljoin(
-                "https://store.downforce.pt",
-                match.group(1)
-            )
-        else:
-            image_url = urljoin(
-                "https://store.downforce.pt",
-                src
-            )
+        r = session.get(ajax_url, timeout=20)
 
-        if image_url in vistos:
-            continue
+        if r.status_code != 200:
+            break
 
-        vistos.add(image_url)
+        novos = processar_html(r.text)
 
-        nome = alt.replace("JANTE ", "", 1)
+        if novos == 0:
+            break
 
-        resultados.append({
-            "nome": nome,
-            "imagem": image_url
-        })
+    print(
+        "JANTES ENCONTRADAS:",
+        marca,
+        modelo,
+        intervalo_ano,
+        tamanho,
+        len(resultados),
+        flush=True
+    )
 
     return resultados
 def gerar_resposta_ia(texto, sender):
@@ -145,24 +225,39 @@ def webhook():
 
         if message.get("type") == "text":
             text = message["text"]["body"].strip()
-            if text.lower() == "teste imagem":
-                send_image(
-                    sender,
-                    "https://store.downforce.pt/Imgs/produtos/000/21/49/DF-6116-1.jpg",
-                    'DF-6116-1 — 17"'
+                        if text.lower() == "teste imagem":
+
+                jantes = buscar_jantes_site(
+                    "AUDI",
+                    "A3 8V",
+                    "2012|2020",
+                    "17"
                 )
+
+                if not jantes:
+                    send_message(
+                        sender,
+                        "Não encontrei jantes compatíveis."
+                    )
+                    return "EVENT_RECEIVED", 200
+
+                send_message(
+                    sender,
+                    f"Encontrei {len(jantes)} modelos compatíveis. Vou mostrar algumas opções:"
+                )
+
+                # Primeiro teste: máximo 10 fotografias
+                for jante in jantes[:10]:
+
+                    legenda = jante["nome"]
+
+                    send_image(
+                        sender,
+                        jante["imagem"],
+                        legenda
+                    )
+
                 return "EVENT_RECEIVED", 200
-            try:
-                resposta = gerar_resposta_ia(text, sender)
-            except Exception as e:
-                print("OPENAI ERROR:", repr(e), flush=True)
-                resposta = "Desculpe, neste momento não consigo responder automaticamente. Um colaborador da Downforce irá ajudá-lo."
-
-            send_message(sender, resposta)
-    except Exception as e:
-        print("ERRO:", str(e), flush=True)
-
-    return "EVENT_RECEIVED", 200
 
 
 def send_message(to, text):
