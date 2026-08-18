@@ -12,6 +12,7 @@ WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 client = OpenAI()
 conversas = {}
+dados_clientes = {}
 def cb_compativel(cb_jante, cb_carro):
     try:
         cb_jante = float(str(cb_jante).replace(",", "."))
@@ -26,6 +27,74 @@ def cb_compativel(cb_jante, cb_carro):
         return True, False
 
     return True, True
+    def atualizar_dados_cliente(texto, sender):
+    estado = dados_clientes.get(sender, {
+        "marca": None,
+        "modelo": None,
+        "ano": None,
+        "tamanho": None
+    })
+
+    texto_limpo = texto.strip()
+
+    # Se já sabemos o carro e o cliente responde apenas 13-24,
+    # assumimos que está a indicar o tamanho da jante.
+    if re.fullmatch(r"(1[3-9]|2[0-4])", texto_limpo) and estado.get("ano"):
+        estado["tamanho"] = texto_limpo
+        dados_clientes[sender] = estado
+        return estado
+
+    prompt = f"""
+Extrai apenas os dados necessários para procurar jantes.
+
+Estado atual:
+{json.dumps(estado, ensure_ascii=False)}
+
+Nova mensagem do cliente:
+{texto_limpo}
+
+Preciso apenas de:
+- marca
+- modelo
+- ano
+- tamanho
+
+Nunca inventes informação.
+
+Se a nova mensagem só acrescentar um dado, mantém os dados anteriores.
+
+Responde APENAS em JSON válido neste formato:
+{{
+  "marca": null,
+  "modelo": null,
+  "ano": null,
+  "tamanho": null
+}}
+"""
+
+    response = client.responses.create(
+        model="gpt-5.6-luna",
+        reasoning={"effort": "low"},
+        input=prompt
+    )
+
+    raw = response.output_text.strip()
+    raw = raw.replace("```json", "").replace("```", "").strip()
+
+    try:
+        novos = json.loads(raw)
+    except Exception:
+        novos = {}
+
+    for campo in ["marca", "modelo", "ano", "tamanho"]:
+        valor = novos.get(campo)
+
+        if valor not in [None, "", "null"]:
+            estado[campo] = str(valor).strip()
+
+    dados_clientes[sender] = estado
+
+    return estado
 def resolver_modelos_site(marca, modelo_cliente, ano):
     base = "https://store.downforce.pt"
     url = f"{base}/ajax/produtos/utils"
@@ -225,6 +294,65 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
     )
 
     return resultados
+
+
+def enviar_jantes_site(sender, dados):
+    marca = dados["marca"]
+    modelo = dados["modelo"]
+    ano = dados["ano"]
+    tamanho = dados["tamanho"]
+
+    variantes = resolver_modelos_site(
+        marca,
+        modelo,
+        int(ano)
+    )
+
+    if not variantes:
+        send_message(
+            sender,
+            "Não encontrei opções disponíveis para esse veículo no catálogo."
+        )
+        return
+
+    todas_jantes = []
+    vistos = set()
+
+    for variante in variantes:
+        jantes = buscar_jantes_site(
+            marca.upper(),
+            variante["modelo"],
+            variante["intervalo"],
+            tamanho
+        )
+
+        for jante in jantes:
+            chave = jante.get("imagem") or jante.get("nome")
+
+            if chave in vistos:
+                continue
+
+            vistos.add(chave)
+            todas_jantes.append(jante)
+
+    if not todas_jantes:
+        send_message(
+            sender,
+            f'Neste momento não encontrei jantes de {tamanho}" disponíveis para esse veículo.'
+        )
+        return
+
+    send_message(
+        sender,
+        f"Encontrei {len(todas_jantes)} opções disponíveis. Vou mostrar até 12 modelos:"
+    )
+
+    for jante in todas_jantes[:12]:
+        send_image(
+            sender,
+            jante["imagem"],
+            jante["nome"]
+        )
 def gerar_resposta_ia(texto, sender):
     previous_id = conversas.get(sender)
 
@@ -311,44 +439,38 @@ def webhook():
         if message.get("type") == "text":
             text = message["text"]["body"].strip()
 
-            if text.lower() == "teste imagem":
-                jantes = buscar_jantes_site(
-                    "AUDI",
-                    "A3 8V",
-                    "2012|2020",
-                    "17"
-                )
+            try:
+                dados = atualizar_dados_cliente(text, sender)
 
-                if not jantes:
-                    send_message(
-                        sender,
-                        "Não encontrei jantes compatíveis."
-                    )
+                if not dados.get("marca"):
+                    send_message(sender, "Qual é a marca do carro?")
                     return "EVENT_RECEIVED", 200
 
-                send_message(
-                    sender,
-                    f"Encontrei {len(jantes)} modelos compatíveis. Vou mostrar algumas opções:"
-                )
+                if not dados.get("modelo"):
+                    send_message(sender, "Qual é o modelo do carro?")
+                    return "EVENT_RECEIVED", 200
 
-                for jante in jantes[:15]:
-                    legenda = jante["nome"]
+                if not dados.get("ano"):
+                    send_message(sender, "Qual é o ano do carro?")
+                    return "EVENT_RECEIVED", 200
 
-                    send_image(
-                        sender,
-                        jante["imagem"],
-                        legenda
-                    )
+                if not dados.get("tamanho"):
+                    send_message(sender, "Que tamanho de jante pretende?")
+                    return "EVENT_RECEIVED", 200
+
+                enviar_jantes_site(sender, dados)
 
                 return "EVENT_RECEIVED", 200
 
-            try:
-                resposta = gerar_resposta_ia(text, sender)
             except Exception as e:
-                print("OPENAI ERROR:", repr(e), flush=True)
-                resposta = "Desculpe, neste momento não consigo responder automaticamente. Um colaborador da Downforce irá ajudá-lo."
+                print("ERRO PESQUISA SITE:", repr(e), flush=True)
 
-            send_message(sender, resposta)
+                send_message(
+                    sender,
+                    "Não consegui consultar o catálogo neste momento. Por favor tente novamente."
+                )
+
+                return "EVENT_RECEIVED", 200
 
     except Exception as e:
         print("ERRO:", str(e), flush=True)
