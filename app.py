@@ -262,12 +262,14 @@ def webhook():
             except Exception as e:
                 print("OPENAI ERROR:", repr(e), flush=True)
                 resposta = "Desculpe, neste momento não consigo responder automaticamente. Um colaborador da Downforce irá ajudá-lo."
+
             send_message(sender, resposta)
 
     except Exception as e:
         print("ERRO:", str(e), flush=True)
 
     return "EVENT_RECEIVED", 200
+
 def send_message(to, text):
     url = f"https://graph.facebook.com/v26.0/{PHONE_NUMBER_ID}/messages"
 
