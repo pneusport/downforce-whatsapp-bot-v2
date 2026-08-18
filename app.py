@@ -224,7 +224,7 @@ def webhook():
         sender = message["from"]
 
         if message.get("type") == "text":
-           text = message["text"]["body"].strip()
+            text = message["text"]["body"].strip()
 
             if text.lower() == "teste imagem":
                 jantes = buscar_jantes_site(
@@ -246,7 +246,7 @@ def webhook():
                     f"Encontrei {len(jantes)} modelos compatíveis. Vou mostrar algumas opções:"
                 )
 
-                for jante in jantes[:5]:
+                for jante in jantes[:15]:
                     legenda = jante["nome"]
 
                     send_image(
@@ -262,7 +262,6 @@ def webhook():
             except Exception as e:
                 print("OPENAI ERROR:", repr(e), flush=True)
                 resposta = "Desculpe, neste momento não consigo responder automaticamente. Um colaborador da Downforce irá ajudá-lo."
-
             send_message(sender, resposta)
 
     except Exception as e:
