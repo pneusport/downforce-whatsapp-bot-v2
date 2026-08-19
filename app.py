@@ -275,6 +275,302 @@ Responde APENAS em JSON válido:
     )
 
     return estado
+    def descobrir_marca_pelo_modelo(modelo_cliente, ano=None):
+    if not modelo_cliente:
+        return None
+
+    modelo_cliente = str(modelo_cliente).strip()
+
+    try:
+        # 1. Pedir à IA apenas uma marca provável
+        prompt = f"""
+O cliente está a procurar jantes para um automóvel e indicou apenas o MODELO:
+
+Modelo: {modelo_cliente}
+
+Identifica a marca do automóvel APENAS se a relação for clara.
+
+Exemplos:
+- Clio -> Renault
+- Megane -> Renault
+- 208 -> Peugeot
+- 308 -> Peugeot
+- A3 -> Audi
+- A4 -> Audi
+- Golf -> Volkswagen
+- Polo -> Volkswagen
+- Leon -> Seat
+- Ibiza -> Seat
+- Corsa -> Opel
+- Astra -> Opel
+- Serie 3 -> BMW
+- Serie 5 -> BMW
+
+Se houver dúvida ou o modelo puder pertencer a várias marcas,
+devolve null.
+
+Não inventes.
+
+Responde APENAS em JSON válido:
+
+{{
+    "marca": null
+}}
+"""
+
+        response = client.responses.create(
+            model="gpt-5.6-luna",
+            reasoning={"effort": "low"},
+            input=prompt
+        )
+
+        raw = response.output_text.strip()
+        raw = raw.replace("```json", "").replace("```", "").strip()
+
+        try:
+            resultado = json.loads(raw)
+        except Exception:
+            resultado = {}
+
+        marca_ia = resultado.get("marca")
+
+        if not marca_ia:
+            print(
+                "MARCA NÃO IDENTIFICADA PELO MODELO:",
+                modelo_cliente,
+                flush=True
+            )
+            return None
+
+        marca_ia = str(marca_ia).strip()
+
+        # ------------------------------------------------
+        # 2. CONFIRMAR A MARCA NO SITE DOWNFORCE
+        # ------------------------------------------------
+
+        base = "https://store.downforce.pt"
+        pagina_jantes = f"{base}/pt/produtos/jantes"
+        utils_url = f"{base}/ajax/produtos/utils"
+
+        session = requests.Session()
+
+        session.headers.update({
+            "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 Chrome/138 Safari/537.36",
+
+            "Accept-Language":
+            "pt-PT,pt;q=0.9,en;q=0.8"
+        })
+
+        inicial = session.get(
+            pagina_jantes,
+            timeout=20
+        )
+
+        inicial.raise_for_status()
+
+        headers_ajax = {
+            "Referer": pagina_jantes,
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "text/html, */*; q=0.01"
+        }
+
+        # ------------------------------------------------
+        # 3. VER QUAL É O NOME EXATO DA MARCA NO SITE
+        # ------------------------------------------------
+
+        r_marcas = session.get(
+            utils_url,
+            params={
+                "a": "veiculos-marcas"
+            },
+            headers=headers_ajax,
+            timeout=20
+        )
+
+        r_marcas.raise_for_status()
+
+        soup_marcas = BeautifulSoup(
+            r_marcas.text,
+            "html.parser"
+        )
+
+        marca_site = None
+
+        marca_ia_normalizada = marca_ia.upper().strip()
+
+        for option in soup_marcas.find_all("option"):
+            valor = (option.get("value") or "").strip()
+
+            if not valor:
+                continue
+
+            valor_normalizado = valor.upper().strip()
+
+            if valor_normalizado == marca_ia_normalizada:
+                marca_site = valor
+                break
+
+            if (
+                marca_ia_normalizada in valor_normalizado
+                or valor_normalizado in marca_ia_normalizada
+            ):
+                marca_site = valor
+                break
+
+        if not marca_site:
+            print(
+                "MARCA IA NÃO EXISTE NO SITE:",
+                marca_ia,
+                flush=True
+            )
+            return None
+
+        # ------------------------------------------------
+        # 4. CONFIRMAR QUE O MODELO EXISTE NESSA MARCA
+        # ------------------------------------------------
+
+        r_modelos = session.get(
+            utils_url,
+            params={
+                "a": "veiculos-modelos",
+                "marca": marca_site
+            },
+            headers=headers_ajax,
+            timeout=20
+        )
+
+        r_modelos.raise_for_status()
+
+        soup_modelos = BeautifulSoup(
+            r_modelos.text,
+            "html.parser"
+        )
+
+        modelo_procura = re.sub(
+            r"\s+",
+            " ",
+            modelo_cliente.upper().strip()
+        )
+
+        modelos_encontrados = []
+
+        for option in soup_modelos.find_all("option"):
+            modelo_site = (option.get("value") or "").strip()
+
+            if not modelo_site:
+                continue
+
+            modelo_site_normalizado = re.sub(
+                r"\s+",
+                " ",
+                modelo_site.upper().strip()
+            )
+
+            if (
+                modelo_site_normalizado == modelo_procura
+                or modelo_site_normalizado.startswith(
+                    modelo_procura + " "
+                )
+            ):
+                modelos_encontrados.append(modelo_site)
+
+        if not modelos_encontrados:
+            print(
+                "MODELO NÃO CONFIRMADO:",
+                marca_site,
+                modelo_cliente,
+                flush=True
+            )
+            return None
+
+        # ------------------------------------------------
+        # 5. SE TEMOS ANO, CONFIRMAR TAMBÉM O ANO
+        # ------------------------------------------------
+
+        if ano:
+            try:
+                ano_num = int(str(ano).strip())
+            except Exception:
+                ano_num = None
+
+            if ano_num:
+
+                encontrado_no_ano = False
+
+                for modelo_site in modelos_encontrados:
+
+                    r_anos = session.get(
+                        utils_url,
+                        params={
+                            "a": "veiculos-anos",
+                            "marca": marca_site,
+                            "modelo": modelo_site
+                        },
+                        headers=headers_ajax,
+                        timeout=20
+                    )
+
+                    if r_anos.status_code != 200:
+                        continue
+
+                    soup_anos = BeautifulSoup(
+                        r_anos.text,
+                        "html.parser"
+                    )
+
+                    for option in soup_anos.find_all("option"):
+                        intervalo = (
+                            option.get("value") or ""
+                        ).strip()
+
+                        if "|" not in intervalo:
+                            continue
+
+                        inicio, fim = intervalo.split("|", 1)
+
+                        try:
+                            inicio = int(inicio)
+                            fim = int(fim)
+                        except ValueError:
+                            continue
+
+                        if inicio <= ano_num <= fim:
+                            encontrado_no_ano = True
+                            break
+
+                    if encontrado_no_ano:
+                        break
+
+                if not encontrado_no_ano:
+                    print(
+                        "MODELO EXISTE MAS ANO NÃO CONFERE:",
+                        marca_site,
+                        modelo_cliente,
+                        ano,
+                        flush=True
+                    )
+                    return None
+
+        print(
+            "MARCA DESCOBERTA AUTOMATICAMENTE:",
+            modelo_cliente,
+            "->",
+            marca_site,
+            flush=True
+        )
+
+        return marca_site
+
+    except Exception as e:
+        print(
+            "ERRO DESCOBRIR MARCA:",
+            repr(e),
+            flush=True
+        )
+
+        return None
 def resolver_modelos_site(marca, modelo_cliente, ano):
     base = "https://store.downforce.pt"
     pagina_jantes = f"{base}/pt/produtos/jantes"
@@ -696,10 +992,20 @@ def webhook():
             try:
                 dados = atualizar_dados_cliente(text, sender)
 
+                               if not dados.get("marca") and dados.get("modelo"):
+                    marca_encontrada = descobrir_marca_pelo_modelo(
+                        dados["modelo"],
+                        dados.get("ano")
+                    )
+
+                    if marca_encontrada:
+                        dados["marca"] = marca_encontrada
+                        dados_clientes[sender]["marca"] = marca_encontrada
+
                 if not dados.get("marca"):
                     send_message(
                         sender,
-                        "Claro 😊 Diga-me, por favor, a marca e o modelo do seu carro."
+                        "Só preciso de confirmar uma coisa 😊 Qual é a marca do carro?"
                     )
                     return "EVENT_RECEIVED", 200
 
