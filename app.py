@@ -985,34 +985,47 @@ def enviar_jantes_site(sender, dados):
 
     # Remover jantes/imagens duplicadas antes de enviar
 imagens_enviadas = set()
-contador = 0
+    contador = 0
 
-for jante in todas_jantes:
+    for jante in todas_jantes:
 
-    imagem = jante.get("imagem")
-    nome = jante.get("nome", "")
+        imagem = jante.get("imagem")
+        nome = jante.get("nome", "")
 
-    if not imagem:
-        continue
+        if not imagem:
+            continue
 
-    if imagem in imagens_enviadas:
-        continue
+        if imagem in imagens_enviadas:
+            print(f"IMAGEM DUPLICADA IGNORADA: {imagem}", flush=True)
+            continue
 
-    imagens_enviadas.add(imagem)
+        imagens_enviadas.add(imagem)
 
-    if contador >= 10:
-        break
+        if contador >= 10:
+            break
 
-    response = send_image(
-        sender,
-        imagem,
-        nome
-    )
+        response = send_image(
+            sender,
+            imagem,
+            nome
+        )
 
-    contador += 1
+        if response is not None and not response.ok:
+            try:
+                erro = response.json().get("error", {})
 
-    # espera 2 segundos antes de enviar a próxima foto
-    time.sleep(2)
+                if erro.get("code") == 131056:
+                    print(
+                        f"RATE LIMIT 131056 para {sender} - envio interrompido.",
+                        flush=True
+                    )
+                    break
+
+            except Exception:
+                pass
+
+        contador += 1
+        time.sleep(2)
         try:
             erro = response.json().get("error", {})
             if erro.get("code") == 131056:
