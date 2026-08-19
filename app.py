@@ -1280,33 +1280,33 @@ print(
         flush=True
 )
 
-    # Se a imagem foi enviada com sucesso
-    if response.ok:
-        gravar_mensagem(
-            to,
-            "saida",
-            conteudo=caption,
-            tipo="imagem",
-            imagem_url=image_url
-        )
-
-        return response
-
-    # Se a Meta bloquear por excesso de mensagens para o mesmo cliente
-    try:
-        erro_meta = response.json().get("error", {})
-        codigo_erro = erro_meta.get("code")
-    except Exception:
-        codigo_erro = None
-
-    if codigo_erro == 131056:
-        print(
-            f"RATE LIMIT 131056 para {to} - parar envio de imagens.",
-            flush=True
-        )
-        return response
+# Se a imagem foi enviada com sucesso
+if response.ok:
+    gravar_mensagem(
+        to,
+        "saida",
+        conteudo=caption,
+        tipo="imagem",
+        imagem_url=image_url
+    )
 
     return response
+
+# Se a Meta bloquear por excesso de mensagens para o mesmo cliente
+try:
+    erro_meta = response.json().get("error", {})
+    codigo_erro = erro_meta.get("code")
+except Exception:
+    codigo_erro = None
+
+if codigo_erro == 131056:
+    print(
+        f"RATE LIMIT 131056 para {to} - parar envio de imagens.",
+        flush=True
+    )
+    return response
+
+return response
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
