@@ -578,6 +578,19 @@ def webhook():
         if message.get("type") == "text":
             text = message["text"]["body"].strip()
             texto_lower = text.lower().strip()
+            nome_cliente = (
+                value.get("contacts", [{}])[0]
+                .get("profile", {})
+                .get("name")
+            )
+
+            gravar_mensagem(
+                sender,
+                "entrada",
+                conteudo=text,
+                tipo="texto",
+                nome=nome_cliente
+            )
 
             cumprimentos = [
                 "olá",
@@ -660,11 +673,20 @@ def send_message(to, text):
     )
 
     print(
-        "META RESPONSE:",
+        "META IMAGE RESPONSE:",
         response.status_code,
         response.text,
         flush=True
     )
+
+    if response.ok:
+        gravar_mensagem(
+            to,
+            "saida",
+            conteudo=caption,
+            tipo="imagem",
+            imagem_url=image_url
+        )
 
     return response
 
