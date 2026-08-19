@@ -17,7 +17,43 @@ client = OpenAI()
 conversas = {}
 dados_clientes = {}
 def init_db():
-    def gravar_mensagem(
+    if not DATABASE_URL:
+        print("DATABASE_URL não configurada", flush=True)
+        return
+
+    with psycopg.connect(DATABASE_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS conversas (
+                    id SERIAL PRIMARY KEY,
+                    telefone TEXT UNIQUE NOT NULL,
+                    nome TEXT,
+                    marca TEXT,
+                    modelo TEXT,
+                    ano TEXT,
+                    tamanho TEXT,
+                    ia_ativa BOOLEAN DEFAULT TRUE,
+                    estado TEXT DEFAULT 'novo',
+                    ultima_mensagem TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS mensagens (
+                    id SERIAL PRIMARY KEY,
+                    telefone TEXT NOT NULL,
+                    direcao TEXT NOT NULL,
+                    tipo TEXT DEFAULT 'texto',
+                    conteudo TEXT,
+                    imagem_url TEXT,
+                    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+        conn.commit()
+
+
+def gravar_mensagem(
     telefone,
     direcao,
     conteudo=None,
@@ -31,7 +67,6 @@ def init_db():
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-
                 cur.execute("""
                     INSERT INTO conversas (
                         telefone,
@@ -67,11 +102,13 @@ def init_db():
 
     except Exception as e:
         print("ERRO BASE DE DADOS:", repr(e), flush=True)
+
 try:
-        init_db()
-        print("BASE DE DADOS OK", flush=True)
+    init_db()
+    print("BASE DE DADOS OK", flush=True)
 except Exception as e:
     print("ERRO INIT DB:", repr(e), flush=True)
+
 def cb_compativel(cb_jante, cb_carro):
     try:
         cb_jante = float(str(cb_jante).replace(",", "."))
@@ -85,9 +122,7 @@ def cb_compativel(cb_jante, cb_carro):
     if abs(cb_jante - cb_carro) < 0.05:
         return True, False
 
-        return True, True
-
-
+    return True, True
 def atualizar_dados_cliente(texto, sender):
     estado = dados_clientes.get(sender, {
         "marca": None,
