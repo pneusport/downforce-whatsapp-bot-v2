@@ -1,6 +1,7 @@
 from flask import Flask, request
 import os
 import requests
+import time
 import json
 import psycopg
 from openai import OpenAI
@@ -982,12 +983,51 @@ def enviar_jantes_site(sender, dados):
         f"Encontrei {len(todas_jantes)} opções disponíveis."
     )
 
-    for jante in todas_jantes[:25]:
-        send_image(
-            sender,
-            jante["imagem"],
-            jante["nome"]
-        )
+    # Remover jantes/imagens duplicadas antes de enviar
+imagens_enviadas = set()
+contador = 0
+
+for jante in todas_jantes:
+
+    imagem = jante.get("imagem")
+    nome = jante.get("nome", "")
+
+    if not imagem:
+        continue
+
+    if imagem in imagens_enviadas:
+        continue
+
+    imagens_enviadas.add(imagem)
+
+    if contador >= 10:
+        break
+
+    response = send_image(
+        sender,
+        imagem,
+        nome
+    )
+
+    contador += 1
+
+    # espera 2 segundos antes de enviar a próxima foto
+    time.sleep(2)
+        try:
+            erro = response.json().get("error", {})
+            if erro.get("code") == 131056:
+                print(
+                    f"RATE LIMIT 131056 para {sender} - envio interrompido.",
+                    flush=True
+                )
+                break
+        except Exception:
+            pass
+
+    contador += 1
+
+    # Pequeno intervalo entre fotografias
+    time.sleep(2)
 def gerar_resposta_ia(texto, sender):
     previous_id = conversas.get(sender)
 
@@ -1235,23 +1275,45 @@ def send_image(to, image_url, caption=""):
         timeout=20
     )
 
-    print(
+print(
         "META IMAGE RESPONSE:",
         response.status_code,
         response.text,
         flush=True
+)
+
+# Se a imagem foi enviada com sucesso
+if response.ok:
+    gravar_mensagem(
+        to,
+        "saida",
+        conteudo=caption,
+        tipo="imagem",
+        imagem_url=image_url
     )
 
-    if response.ok:
-        gravar_mensagem(
-            to,
-            "saida",
-            conteudo=caption,
-            tipo="imagem",
-            imagem_url=image_url
-        )
-
     return response
+
+
+# Se a Meta bloquear por excesso de mensagens para o mesmo cliente
+try:
+    erro_meta = response.json().get("error", {})
+    codigo_erro = erro_meta.get("code")
+except Exception:
+    codigo_erro = None
+
+
+if codigo_erro == 131056:
+    print(
+        f"RATE LIMIT 131056 para {to} - parar envio de imagens.",
+        flush=True
+    )
+
+    # devolvemos a resposta para o ciclo saber que deve parar
+    return response
+
+
+return response
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
