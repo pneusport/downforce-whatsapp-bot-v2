@@ -390,7 +390,7 @@ def enviar_jantes_site(sender, dados):
 
     send_message(
         sender,
-        f"Encontrei {len(todas_jantes)} opções disponíveis. Vou mostrar até 25 modelos:"
+        f"Encontrei {len(todas_jantes)} opções disponíveis."
     )
 
     for jante in todas_jantes[:25]:
