@@ -2,6 +2,7 @@ from flask import Flask, request
 import os
 import requests
 import json
+import psycopg
 from openai import OpenAI
 from bs4 import BeautifulSoup
 import re
