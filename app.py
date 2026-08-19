@@ -579,11 +579,14 @@ def resolver_modelos_site(marca, modelo_cliente, ano):
     session = requests.Session()
 
     session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138 Safari/537.36",
-        "Accept-Language": "pt-PT,pt;q=0.9,en;q=0.8"
+        "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 Chrome/138 Safari/537.36",
+
+        "Accept-Language":
+        "pt-PT,pt;q=0.9,en;q=0.8"
     })
 
-    # Primeiro entra no site para obter cookies/sessão
     inicial = session.get(
         pagina_jantes,
         timeout=20
@@ -596,7 +599,10 @@ def resolver_modelos_site(marca, modelo_cliente, ano):
         "Accept": "text/html, */*; q=0.01"
     }
 
-    # Procurar modelos da marca
+    # ---------------------------------------
+    # OBTER TODOS OS MODELOS REAIS DA MARCA
+    # ---------------------------------------
+
     r = session.get(
         utils_url,
         params={
@@ -616,21 +622,117 @@ def resolver_modelos_site(marca, modelo_cliente, ano):
 
     r.raise_for_status()
 
-    soup = BeautifulSoup(r.text, "html.parser")
+    soup = BeautifulSoup(
+        r.text,
+        "html.parser"
+    )
 
-    modelo_procura = modelo_cliente.upper().strip()
-    ano = int(ano)
+    modelos_site = []
+
+    for option in soup.find_all("option"):
+        modelo_site = (
+            option.get("value") or ""
+        ).strip()
+
+        if modelo_site:
+            modelos_site.append(modelo_site)
+
+    if not modelos_site:
+        return []
+
+    # ---------------------------------------
+    # PEDIR À IA PARA ESCOLHER MODELOS REAIS
+    # ---------------------------------------
+
+    prompt = f"""
+O cliente procura jantes para este automóvel:
+
+Marca: {marca}
+Modelo dito pelo cliente: {modelo_cliente}
+Ano: {ano}
+
+Abaixo está a lista REAL de modelos disponíveis no catálogo
+da marca {marca}:
+
+{json.dumps(modelos_site, ensure_ascii=False)}
+
+Escolhe APENAS os modelos dessa lista que podem corresponder
+ao automóvel indicado pelo cliente.
+
+Tem em conta nomes comerciais e códigos de geração.
+
+Exemplos de interpretação:
+- "Classe A" pode corresponder a um modelo da família Mercedes A
+- "Classe C" pode corresponder à família Mercedes C
+- "Serie 3" corresponde à família BMW Série 3
+- "Golf 7" corresponde ao Golf da geração adequada
+- "A4" corresponde à família Audi A4
+
+NÃO inventes nomes.
+Só podes devolver valores que existam exatamente na lista fornecida.
+
+Se houver mais de uma geração possível, podes devolver várias.
+O ano será confirmado depois pelo código.
+
+Responde APENAS em JSON válido:
+
+{{
+    "modelos": []
+}}
+"""
+
+    response = client.responses.create(
+        model="gpt-5.6-luna",
+        reasoning={"effort": "low"},
+        input=prompt
+    )
+
+    raw = response.output_text.strip()
+    raw = raw.replace(
+        "```json",
+        ""
+    ).replace(
+        "```",
+        ""
+    ).strip()
+
+    try:
+        escolha = json.loads(raw)
+        candidatos = escolha.get("modelos", [])
+    except Exception:
+        candidatos = []
+
+    # Segurança:
+    # aceitar apenas nomes que existem realmente no site
+    candidatos = [
+        modelo
+        for modelo in candidatos
+        if modelo in modelos_site
+    ]
+
+    print(
+        "MODELOS CANDIDATOS:",
+        modelo_cliente,
+        "->",
+        candidatos,
+        flush=True
+    )
+
+    if not candidatos:
+        return []
+
+    # ---------------------------------------
+    # CONFIRMAR O ANO EM CADA CANDIDATO
+    # ---------------------------------------
+
+    try:
+        ano_num = int(ano)
+    except Exception:
+        return []
 
     encontrados = []
 
-    for option in soup.find_all("option"):
-        modelo_site = (option.get("value") or "").strip()
-
-        if not modelo_site:
-            continue
-
-        if modelo_procura not in modelo_site.upper():
-            continue
+    for modelo_site in candidatos:
 
         r_anos = session.get(
             utils_url,
@@ -650,7 +752,8 @@ def resolver_modelos_site(marca, modelo_cliente, ano):
             flush=True
         )
 
-        r_anos.raise_for_status()
+        if r_anos.status_code != 200:
+            continue
 
         soup_anos = BeautifulSoup(
             r_anos.text,
@@ -658,7 +761,10 @@ def resolver_modelos_site(marca, modelo_cliente, ano):
         )
 
         for option_ano in soup_anos.find_all("option"):
-            intervalo = (option_ano.get("value") or "").strip()
+
+            intervalo = (
+                option_ano.get("value") or ""
+            ).strip()
 
             if "|" not in intervalo:
                 continue
@@ -671,11 +777,20 @@ def resolver_modelos_site(marca, modelo_cliente, ano):
             except ValueError:
                 continue
 
-            if inicio <= ano <= fim:
+            if inicio <= ano_num <= fim:
+
                 encontrados.append({
                     "modelo": modelo_site,
                     "intervalo": intervalo
                 })
+
+                break
+
+    print(
+        "MODELOS CONFIRMADOS:",
+        encontrados,
+        flush=True
+    )
 
     return encontrados    
 def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
