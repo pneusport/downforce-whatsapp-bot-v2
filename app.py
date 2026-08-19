@@ -482,8 +482,26 @@ def webhook():
         message = value["messages"][0]
         sender = message["from"]
 
-        if message.get("type") == "text":
+                if message.get("type") == "text":
             text = message["text"]["body"].strip()
+            texto_lower = text.lower().strip()
+
+            cumprimentos = [
+                "olá",
+                "ola",
+                "bom dia",
+                "boa tarde",
+                "boa noite"
+            ]
+
+            if texto_lower in cumprimentos:
+                send_message(
+                    sender,
+                    "Olá! 👋 Bem-vindo à Downforce.\n\n"
+                    "Estou aqui para ajudar a encontrar jantes compatíveis para o seu carro.\n"
+                    "Qual é a marca e o modelo?"
+                )
+                return "EVENT_RECEIVED", 200
 
             try:
                 dados = atualizar_dados_cliente(text, sender)
