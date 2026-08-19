@@ -992,7 +992,7 @@ def webhook():
             try:
                 dados = atualizar_dados_cliente(text, sender)
 
-                               if not dados.get("marca") and dados.get("modelo"):
+                if not dados.get("marca") and dados.get("modelo"):
                     marca_encontrada = descobrir_marca_pelo_modelo(
                         dados["modelo"],
                         dados.get("ano")
