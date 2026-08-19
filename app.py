@@ -244,7 +244,8 @@ Responde APENAS em JSON válido:
         novo_modelo
         and estado.get("modelo")
         and novo_modelo.lower() != estado["modelo"].lower()
-    ):
+):
+        estado["marca"] = None
         estado["modelo"] = None
         estado["ano"] = None
         estado["tamanho"] = None
