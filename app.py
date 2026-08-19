@@ -129,37 +129,41 @@ def atualizar_dados_cliente(texto, sender):
         "modelo": None,
         "ano": None,
         "tamanho": None
-    })
+    }).copy()
 
     texto_limpo = texto.strip()
 
-    # Se já sabemos o carro e o cliente responde apenas 13-24,
-    # assumimos que está a indicar o tamanho da jante.
-    if re.fullmatch(r"(1[3-9]|2[0-4])", texto_limpo) and estado.get("ano"):
+    # Se o cliente responder apenas com um tamanho, por exemplo "15"
+    if re.fullmatch(r"(1[3-9]|2[0-4])", texto_limpo):
         estado["tamanho"] = texto_limpo
         dados_clientes[sender] = estado
         return estado
 
     prompt = f"""
-Extrai apenas os dados necessários para procurar jantes.
+Extrai APENAS os dados que aparecem explicitamente na NOVA mensagem do cliente.
 
-Estado atual:
-{json.dumps(estado, ensure_ascii=False)}
-
-Nova mensagem do cliente:
+Nova mensagem:
 {texto_limpo}
 
-Preciso apenas de:
+Quero apenas:
 - marca
 - modelo
 - ano
 - tamanho
 
-Nunca inventes informação.
+REGRAS IMPORTANTES:
 
-Se a nova mensagem só acrescentar um dado, mantém os dados anteriores.
+- NÃO copies dados do estado anterior.
+- Se um dado não estiver escrito nesta nova mensagem, devolve null.
+- Um ano deve estar normalmente entre 1900 e 2100.
+- Um tamanho de jante deve estar entre 13 e 24.
+- Em "Peugeot 208", 208 é o MODELO, não é o ano.
+- Em "Peugeot 308", 308 é o MODELO, não é o ano.
+- Em "Audi A4 2012 18", A4 é modelo, 2012 é ano e 18 é tamanho.
+- Nunca inventes informação.
 
-Responde APENAS em JSON válido neste formato:
+Responde APENAS em JSON válido:
+
 {{
   "marca": null,
   "modelo": null,
@@ -182,13 +186,93 @@ Responde APENAS em JSON válido neste formato:
     except Exception:
         novos = {}
 
-    for campo in ["marca", "modelo", "ano", "tamanho"]:
-        valor = novos.get(campo)
+    nova_marca = novos.get("marca")
+    novo_modelo = novos.get("modelo")
+    novo_ano = novos.get("ano")
+    novo_tamanho = novos.get("tamanho")
 
-        if valor not in [None, "", "null"]:
-            estado[campo] = str(valor).strip()
+    # Limpar valores vazios
+    if nova_marca:
+        nova_marca = str(nova_marca).strip()
+
+    if novo_modelo:
+        novo_modelo = str(novo_modelo).strip()
+
+    # Validar ano
+    if novo_ano:
+        try:
+            ano_num = int(str(novo_ano).strip())
+
+            if 1900 <= ano_num <= 2100:
+                novo_ano = str(ano_num)
+            else:
+                novo_ano = None
+        except Exception:
+            novo_ano = None
+
+    # Validar tamanho
+    if novo_tamanho:
+        tamanho_match = re.search(
+            r"\b(1[3-9]|2[0-4])\b",
+            str(novo_tamanho)
+        )
+
+        if tamanho_match:
+            novo_tamanho = tamanho_match.group(1)
+        else:
+            novo_tamanho = None
+
+    # ---------------------------------------
+    # DETETAR MUDANÇA DE CARRO
+    # ---------------------------------------
+
+    # Mudou de marca -> limpar carro anterior
+    if (
+        nova_marca
+        and estado.get("marca")
+        and nova_marca.lower() != estado["marca"].lower()
+    ):
+        estado = {
+            "marca": None,
+            "modelo": None,
+            "ano": None,
+            "tamanho": None
+        }
+
+    # Mesma marca, mas mudou de modelo
+    elif (
+        novo_modelo
+        and estado.get("modelo")
+        and novo_modelo.lower() != estado["modelo"].lower()
+    ):
+        estado["modelo"] = None
+        estado["ano"] = None
+        estado["tamanho"] = None
+
+    # ---------------------------------------
+    # ADICIONAR APENAS OS NOVOS DADOS
+    # ---------------------------------------
+
+    if nova_marca:
+        estado["marca"] = nova_marca
+
+    if novo_modelo:
+        estado["modelo"] = novo_modelo
+
+    if novo_ano:
+        estado["ano"] = novo_ano
+
+    if novo_tamanho:
+        estado["tamanho"] = novo_tamanho
 
     dados_clientes[sender] = estado
+
+    print(
+        "DADOS CLIENTE:",
+        sender,
+        estado,
+        flush=True
+    )
 
     return estado
 def resolver_modelos_site(marca, modelo_cliente, ano):
@@ -614,35 +698,32 @@ def webhook():
                 dados = atualizar_dados_cliente(text, sender)
 
                 if not dados.get("marca"):
-                    send_message(sender, "Qual é a marca do carro?")
-                    return "EVENT_RECEIVED", 200
+    send_message(
+        sender,
+        "Claro 😊 Diga-me, por favor, a marca e o modelo do seu carro."
+    )
+    return "EVENT_RECEIVED", 200
 
-                if not dados.get("modelo"):
-                    send_message(sender, "Qual é o modelo do carro?")
-                    return "EVENT_RECEIVED", 200
+if not dados.get("modelo"):
+    send_message(
+        sender,
+        "Obrigado 😊 Qual é o modelo do carro?"
+    )
+    return "EVENT_RECEIVED", 200
 
-                if not dados.get("ano"):
-                    send_message(sender, "Qual é o ano do carro?")
-                    return "EVENT_RECEIVED", 200
+if not dados.get("ano"):
+    send_message(
+        sender,
+        "Perfeito 👍 E de que ano é o carro?"
+    )
+    return "EVENT_RECEIVED", 200
 
-                if not dados.get("tamanho"):
-                    send_message(sender, "Que tamanho de jante pretende?")
-                    return "EVENT_RECEIVED", 200
-
-                enviar_jantes_site(sender, dados)
-
-                return "EVENT_RECEIVED", 200
-
-            except Exception as e:
-                print("ERRO PESQUISA SITE:", repr(e), flush=True)
-
-                send_message(
-                    sender,
-                    "Não consegui consultar o catálogo neste momento. Por favor tente novamente."
-                )
-
-                return "EVENT_RECEIVED", 200
-
+if not dados.get("tamanho"):
+    send_message(
+        sender,
+        'Ótimo 😊 Que tamanho de jante pretende? Por exemplo: 15", 16", 17", 18"...'
+    )
+    return "EVENT_RECEIVED", 200
     except Exception as e:
         print("ERRO:", str(e), flush=True)
 
