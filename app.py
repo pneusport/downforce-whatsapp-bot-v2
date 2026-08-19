@@ -12,9 +12,66 @@ app = Flask(__name__)
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "downforce2026")
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
+DATABASE_URL = os.getenv("DATABASE_URL")
 client = OpenAI()
 conversas = {}
 dados_clientes = {}
+def init_db():
+    def gravar_mensagem(
+    telefone,
+    direcao,
+    conteudo=None,
+    tipo="texto",
+    imagem_url=None,
+    nome=None
+):
+    if not DATABASE_URL:
+        return
+
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+
+                cur.execute("""
+                    INSERT INTO conversas (
+                        telefone,
+                        nome,
+                        ultima_mensagem
+                    )
+                    VALUES (%s, %s, CURRENT_TIMESTAMP)
+
+                    ON CONFLICT (telefone)
+                    DO UPDATE SET
+                        nome = COALESCE(EXCLUDED.nome, conversas.nome),
+                        ultima_mensagem = CURRENT_TIMESTAMP
+                """, (telefone, nome))
+
+                cur.execute("""
+                    INSERT INTO mensagens (
+                        telefone,
+                        direcao,
+                        tipo,
+                        conteudo,
+                        imagem_url
+                    )
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (
+                    telefone,
+                    direcao,
+                    tipo,
+                    conteudo,
+                    imagem_url
+                ))
+
+            conn.commit()
+
+    except Exception as e:
+        print("ERRO BASE DE DADOS:", repr(e), flush=True)
+try:
+        init_db()
+        print("BASE DE DADOS OK", flush=True)
+except Exception as e:
+    print("ERRO INIT DB:", repr(e), flush=True)
 def cb_compativel(cb_jante, cb_carro):
     try:
         cb_jante = float(str(cb_jante).replace(",", "."))
