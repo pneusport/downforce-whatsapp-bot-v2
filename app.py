@@ -693,11 +693,10 @@ def webhook():
                     "Qual é a marca e o modelo?"
                 )
                 return "EVENT_RECEIVED", 200
-
-            try:
+try:
                 dados = atualizar_dados_cliente(text, sender)
 
-                if not dados.get("marca"):
+if not dados.get("marca"):
                 send_message(
                     sender,
                     "Claro 😊 Diga-me, por favor, a marca e o modelo do seu carro."
