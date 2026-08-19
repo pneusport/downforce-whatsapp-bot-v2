@@ -984,7 +984,7 @@ def enviar_jantes_site(sender, dados):
     )
 
     # Remover jantes/imagens duplicadas antes de enviar
-imagens_enviadas = set()
+    imagens_enviadas = set()
     contador = 0
 
     for jante in todas_jantes:
@@ -1026,21 +1026,6 @@ imagens_enviadas = set()
 
         contador += 1
         time.sleep(2)
-        try:
-            erro = response.json().get("error", {})
-            if erro.get("code") == 131056:
-                print(
-                    f"RATE LIMIT 131056 para {sender} - envio interrompido.",
-                    flush=True
-                )
-                break
-        except Exception:
-            pass
-
-    contador += 1
-
-    # Pequeno intervalo entre fotografias
-    time.sleep(2)
 def gerar_resposta_ia(texto, sender):
     previous_id = conversas.get(sender)
 
