@@ -390,10 +390,10 @@ def enviar_jantes_site(sender, dados):
 
     send_message(
         sender,
-        f"Encontrei {len(todas_jantes)} opções disponíveis. Vou mostrar até 12 modelos:"
+        f"Encontrei {len(todas_jantes)} opções disponíveis. Vou mostrar até 25 modelos:"
     )
 
-    for jante in todas_jantes[:12]:
+    for jante in todas_jantes[:25]:
         send_image(
             sender,
             jante["imagem"],
