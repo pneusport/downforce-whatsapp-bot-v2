@@ -1,4 +1,5 @@
-from flask import Flask, request
+from flask import Flask, request, Response, render_template_string
+import hmac
 import os
 import requests
 import time
@@ -1310,7 +1311,384 @@ def send_image(to, image_url, caption=""):
 
     return response
 
+# ==========================================================
+# ADMIN - CONVERSAS WHATSAPP
+# ==========================================================
 
+def admin_autorizado():
+    auth = request.authorization
+
+    if not auth:
+        return False
+
+    admin_user = os.environ.get("ADMIN_USER", "admin")
+    admin_password = os.environ.get("ADMIN_PASSWORD", "")
+
+    return (
+        hmac.compare_digest(auth.username or "", admin_user)
+        and hmac.compare_digest(auth.password or "", admin_password)
+    )
+
+
+def pedir_login_admin():
+    return Response(
+        "Login necessário",
+        401,
+        {"WWW-Authenticate": 'Basic realm="Downforce Admin"'}
+    )
+
+
+ADMIN_HTML = """
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="5">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Downforce WhatsApp Admin</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            color: #111;
+        }
+
+        .topo {
+            height: 64px;
+            background: #111827;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 25px;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .layout {
+            display: flex;
+            height: calc(100vh - 64px);
+        }
+
+        .conversas {
+            width: 340px;
+            background: white;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+        }
+
+        .titulo {
+            padding: 18px;
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .cliente {
+            display: block;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            text-decoration: none;
+            color: #111;
+        }
+
+        .cliente:hover {
+            background: #f5f5f5;
+        }
+
+        .cliente.ativo {
+            background: #e7f5ef;
+        }
+
+        .nome {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .telefone {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .hora {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #efeae2;
+        }
+
+        .cabecalho-chat {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+
+        .mensagens {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .linha {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .entrada {
+            justify-content: flex-start;
+        }
+
+        .saida {
+            justify-content: flex-end;
+        }
+
+        .bolha {
+            max-width: 70%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            line-height: 1.4;
+            box-shadow: 0 1px 2px rgba(0,0,0,.15);
+        }
+
+        .entrada .bolha {
+            background: white;
+        }
+
+        .saida .bolha {
+            background: #d9fdd3;
+        }
+
+        .mensagem-hora {
+            margin-top: 5px;
+            font-size: 10px;
+            color: #777;
+            text-align: right;
+        }
+
+        .imagem-chat {
+            max-width: 350px;
+            width: 100%;
+            border-radius: 6px;
+            margin-bottom: 7px;
+            display: block;
+        }
+
+        .sem-chat {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 18px;
+        }
+
+        @media(max-width: 800px) {
+            .conversas {
+                width: 260px;
+            }
+
+            .bolha {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topo">
+    Downforce - WhatsApp Admin
+</div>
+
+<div class="layout">
+
+    <div class="conversas">
+
+        <div class="titulo">
+            Conversas
+        </div>
+
+        {% for conversa in conversas %}
+
+            <a
+                href="/admin/{{ conversa[0] }}"
+                class="cliente {% if telefone_selecionado == conversa[0] %}ativo{% endif %}"
+            >
+
+                <div class="nome">
+                    {{ conversa[1] or conversa[0] }}
+                </div>
+
+                <div class="telefone">
+                    +{{ conversa[0] }}
+                </div>
+
+                <div class="hora">
+                    {{ conversa[2] }}
+                </div>
+
+            </a>
+
+        {% endfor %}
+
+    </div>
+
+
+    {% if telefone_selecionado %}
+
+    <div class="chat">
+
+        <div class="cabecalho-chat">
+            {{ nome_selecionado or telefone_selecionado }}
+            &nbsp; | &nbsp;
+            +{{ telefone_selecionado }}
+        </div>
+
+        <div class="mensagens" id="mensagens">
+
+            {% for mensagem in mensagens %}
+
+                <div class="linha {{ 'saida' if mensagem[1] == 'saida' else 'entrada' }}">
+
+                    <div class="bolha">
+
+                        {% if mensagem[4] %}
+                            <img
+                                class="imagem-chat"
+                                src="{{ mensagem[4] }}"
+                                loading="lazy"
+                            >
+                        {% endif %}
+
+                        {% if mensagem[3] %}
+                            <div>{{ mensagem[3] }}</div>
+                        {% endif %}
+
+                        <div class="mensagem-hora">
+                            {{ mensagem[5] }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    {% else %}
+
+    <div class="sem-chat">
+        Seleciona uma conversa
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<script>
+    const mensagens = document.getElementById("mensagens");
+
+    if (mensagens) {
+        mensagens.scrollTop = mensagens.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
+"""
+
+
+@app.route("/admin")
+@app.route("/admin/<telefone>")
+def admin(telefone=None):
+
+    if not admin_autorizado():
+        return pedir_login_admin()
+
+    if not DATABASE_URL:
+        return "DATABASE_URL não configurada", 500
+
+    conversas = []
+    mensagens = []
+    nome_selecionado = None
+
+    try:
+
+        with psycopg.connect(DATABASE_URL) as conn:
+
+            with conn.cursor() as cur:
+
+                # Lista das conversas
+                cur.execute("""
+                    SELECT
+                        telefone,
+                        nome,
+                        ultima_mensagem
+                    FROM conversas
+                    ORDER BY ultima_mensagem DESC
+                    LIMIT 300
+                """)
+
+                conversas = cur.fetchall()
+
+                # Mensagens da conversa selecionada
+                if telefone:
+
+                    cur.execute("""
+                        SELECT
+                            id,
+                            direcao,
+                            tipo,
+                            conteudo,
+                            imagem_url,
+                            criado_em
+                        FROM mensagens
+                        WHERE telefone = %s
+                        ORDER BY criado_em ASC, id ASC
+                        LIMIT 1000
+                    """, (telefone,))
+
+                    mensagens = cur.fetchall()
+
+                    cur.execute("""
+                        SELECT nome
+                        FROM conversas
+                        WHERE telefone = %s
+                    """, (telefone,))
+
+                    resultado = cur.fetchone()
+
+                    if resultado:
+                        nome_selecionado = resultado[0]
+
+    except Exception as e:
+        print("ERRO ADMIN:", repr(e), flush=True)
+        return f"Erro ao carregar admin: {e}", 500
+
+    return render_template_string(
+        ADMIN_HTML,
+        conversas=conversas,
+        mensagens=mensagens,
+        telefone_selecionado=telefone,
+        nome_selecionado=nome_selecionado
+    )
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
