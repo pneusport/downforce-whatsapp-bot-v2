@@ -100,16 +100,47 @@ Responde APENAS em JSON válido neste formato:
     return estado
 def resolver_modelos_site(marca, modelo_cliente, ano):
     base = "https://store.downforce.pt"
-    url = f"{base}/ajax/produtos/utils"
+    pagina_jantes = f"{base}/pt/produtos/jantes"
+    utils_url = f"{base}/ajax/produtos/utils"
 
-    r = requests.get(
-        url,
+    session = requests.Session()
+
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138 Safari/537.36",
+        "Accept-Language": "pt-PT,pt;q=0.9,en;q=0.8"
+    })
+
+    # Primeiro entra no site para obter cookies/sessão
+    inicial = session.get(
+        pagina_jantes,
+        timeout=20
+    )
+    inicial.raise_for_status()
+
+    headers_ajax = {
+        "Referer": pagina_jantes,
+        "X-Requested-With": "XMLHttpRequest",
+        "Accept": "text/html, */*; q=0.01"
+    }
+
+    # Procurar modelos da marca
+    r = session.get(
+        utils_url,
         params={
             "a": "veiculos-modelos",
             "marca": marca.upper()
         },
+        headers=headers_ajax,
         timeout=20
     )
+
+    print(
+        "MODELOS SITE:",
+        r.status_code,
+        r.url,
+        flush=True
+    )
+
     r.raise_for_status()
 
     soup = BeautifulSoup(r.text, "html.parser")
@@ -128,18 +159,30 @@ def resolver_modelos_site(marca, modelo_cliente, ano):
         if modelo_procura not in modelo_site.upper():
             continue
 
-        r_anos = requests.get(
-            url,
+        r_anos = session.get(
+            utils_url,
             params={
                 "a": "veiculos-anos",
                 "marca": marca.upper(),
                 "modelo": modelo_site
             },
+            headers=headers_ajax,
             timeout=20
         )
+
+        print(
+            "ANOS SITE:",
+            r_anos.status_code,
+            modelo_site,
+            flush=True
+        )
+
         r_anos.raise_for_status()
 
-        soup_anos = BeautifulSoup(r_anos.text, "html.parser")
+        soup_anos = BeautifulSoup(
+            r_anos.text,
+            "html.parser"
+        )
 
         for option_ano in soup_anos.find_all("option"):
             intervalo = (option_ano.get("value") or "").strip()
