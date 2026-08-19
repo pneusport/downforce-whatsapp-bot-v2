@@ -673,7 +673,7 @@ def send_message(to, text):
     )
 
     print(
-        "META IMAGE RESPONSE:",
+        "META RESPONSE:",
         response.status_code,
         response.text,
         flush=True
@@ -683,15 +683,11 @@ def send_message(to, text):
         gravar_mensagem(
             to,
             "saida",
-            conteudo=caption,
-            tipo="imagem",
-            imagem_url=image_url
+            conteudo=text,
+            tipo="texto"
         )
 
     return response
-
-
-def send_image(to, image_url, caption=""):
     url = f"https://graph.facebook.com/v26.0/{PHONE_NUMBER_ID}/messages"
 
     headers = {
