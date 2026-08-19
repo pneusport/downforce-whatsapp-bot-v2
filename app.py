@@ -742,7 +742,8 @@ def webhook():
                 )
 
                 return "EVENT_RECEIVED", 200
-        except Exception as e:
+
+    except Exception as e:
         print("ERRO:", str(e), flush=True)
 
     return "EVENT_RECEIVED", 200
