@@ -788,6 +788,7 @@ def send_message(to, text):
         )
 
     return response
+def send_image(to, image_url, caption=""):
     url = f"https://graph.facebook.com/v26.0/{PHONE_NUMBER_ID}/messages"
 
     headers = {
@@ -819,27 +820,16 @@ def send_message(to, text):
         flush=True
     )
 
+    if response.ok:
+        gravar_mensagem(
+            to,
+            "saida",
+            conteudo=caption,
+            tipo="imagem",
+            imagem_url=image_url
+        )
+
     return response
-    url = f"https://graph.facebook.com/v26.0/{PHONE_NUMBER_ID}/messages"
-
-    headers = {
-        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": to,
-        "type": "text",
-        "text": {
-            "body": text
-        }
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-
-    print("META RESPONSE:", response.status_code, response.text, flush=True)
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
