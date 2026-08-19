@@ -693,37 +693,56 @@ def webhook():
                     "Qual é a marca e o modelo?"
                 )
                 return "EVENT_RECEIVED", 200
-try:
+            try:
                 dados = atualizar_dados_cliente(text, sender)
 
-if not dados.get("marca"):
+                if not dados.get("marca"):
+                    send_message(
+                        sender,
+                        "Claro 😊 Diga-me, por favor, a marca e o modelo do seu carro."
+                    )
+                    return "EVENT_RECEIVED", 200
+
+                if not dados.get("modelo"):
+                    send_message(
+                        sender,
+                        "Obrigado 😊 Qual é o modelo do carro?"
+                    )
+                    return "EVENT_RECEIVED", 200
+
+                if not dados.get("ano"):
+                    send_message(
+                        sender,
+                        "Perfeito 👍 E de que ano é o carro?"
+                    )
+                    return "EVENT_RECEIVED", 200
+
+                if not dados.get("tamanho"):
+                    send_message(
+                        sender,
+                        'Ótimo 😊 Que tamanho de jante pretende? Por exemplo: 15", 16", 17", 18"...'
+                    )
+                    return "EVENT_RECEIVED", 200
+
+                enviar_jantes_site(sender, dados)
+
+                return "EVENT_RECEIVED", 200
+
+            except Exception as e:
+                print(
+                    "ERRO PESQUISA SITE:",
+                    repr(e),
+                    flush=True
+                )
+
                 send_message(
                     sender,
-                    "Claro 😊 Diga-me, por favor, a marca e o modelo do seu carro."
-    )
-    return "EVENT_RECEIVED", 200
+                    "Peço desculpa 😊 Neste momento não consegui consultar o catálogo. "
+                    "Pode tentar novamente dentro de alguns instantes?"
+                )
 
-if not dados.get("modelo"):
-    send_message(
-        sender,
-        "Obrigado 😊 Qual é o modelo do carro?"
-    )
-    return "EVENT_RECEIVED", 200
-
-if not dados.get("ano"):
-    send_message(
-        sender,
-        "Perfeito 👍 E de que ano é o carro?"
-    )
-    return "EVENT_RECEIVED", 200
-
-if not dados.get("tamanho"):
-    send_message(
-        sender,
-        'Ótimo 😊 Que tamanho de jante pretende? Por exemplo: 15", 16", 17", 18"...'
-    )
-    return "EVENT_RECEIVED", 200
-    except Exception as e:
+                return "EVENT_RECEIVED", 200
+        except Exception as e:
         print("ERRO:", str(e), flush=True)
 
     return "EVENT_RECEIVED", 200
