@@ -275,7 +275,7 @@ Responde APENAS em JSON válido:
     )
 
     return estado
-    def descobrir_marca_pelo_modelo(modelo_cliente, ano=None):
+def descobrir_marca_pelo_modelo(modelo_cliente, ano=None):
     if not modelo_cliente:
         return None
 
