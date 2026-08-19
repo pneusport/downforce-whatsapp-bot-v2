@@ -1001,7 +1001,7 @@ def enviar_jantes_site(sender, dados):
 
         imagens_enviadas.add(imagem)
 
-        if contador >= 10:
+        if contador >= 25:
             break
 
         response = send_image(
@@ -1025,7 +1025,13 @@ def enviar_jantes_site(sender, dados):
                 pass
 
         contador += 1
-        time.sleep(2)
+        time.sleep(0.8)
+
+    print(
+        f"RESPOSTA DE JANTES CONCLUÍDA PARA {sender} - não chamar IA novamente.",
+        flush=True
+    )
+    return
 def gerar_resposta_ia(texto, sender):
     previous_id = conversas.get(sender)
 
