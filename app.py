@@ -489,6 +489,7 @@ def webhook():
             cumprimentos = [
                 "olá",
                 "ola",
+                "boas",
                 "bom dia",
                 "boa tarde",
                 "boa noite"
