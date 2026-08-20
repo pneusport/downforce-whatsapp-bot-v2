@@ -1165,7 +1165,7 @@ def webhook():
 
         if message.get("type") == "text":
             text = message["text"]["body"].strip()
-                        texto_lower = text.lower().strip()
+            texto_lower = text.lower().strip()
             # --------------------------------------------------
             # RESPOSTAS DEPOIS DE MOSTRAR AS JANTES
             # --------------------------------------------------
