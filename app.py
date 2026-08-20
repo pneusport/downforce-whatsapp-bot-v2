@@ -39,7 +39,6 @@ def init_db():
                     ultima_mensagem TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS mensagens (
                     id SERIAL PRIMARY KEY,
@@ -1055,10 +1054,19 @@ def enviar_jantes_site(sender, dados):
         contador += 1
         time.sleep(0.8)
 
+        # Depois de enviar todas as opções, fazer apenas esta pergunta
+    if contador > 0:
+        send_message(
+            sender,
+            "Gostou de alguma destas opções? 😊\n\n"
+            "Se quiser, posso enviar opções noutro tamanho ou para outro carro."
+        )
+
     print(
-        f"RESPOSTA DE JANTES CONCLUÍDA PARA {sender} - não chamar IA novamente.",
+        f"RESPOSTA DE JANTES CONCLUÍDA PARA {sender}.",
         flush=True
     )
+
     return
 def gerar_resposta_ia(texto, sender):
     previous_id = conversas.get(sender)
@@ -1157,21 +1165,103 @@ def webhook():
 
         if message.get("type") == "text":
             text = message["text"]["body"].strip()
-            texto_lower = text.lower().strip()
-            nome_cliente = (
-                value.get("contacts", [{}])[0]
-                .get("profile", {})
-                .get("name")
+                        texto_lower = text.lower().strip()
+            # --------------------------------------------------
+            # RESPOSTAS DEPOIS DE MOSTRAR AS JANTES
+            # --------------------------------------------------
+
+            # Cliente quer encomendar / separar algumas jantes
+            frases_encomenda = [
+                "manda vir",
+                "mandar vir",
+                "quero encomendar",
+                "encomenda",
+                "encomendar",
+                "separa estas",
+                "separa essas",
+                "separar estas",
+                "separar essas",
+                "manda estas",
+                "manda essas",
+                "envia estas",
+                "envia essas",
+                "pode enviar estas",
+                "podes enviar estas",
+                "pode enviar essas",
+                "podes enviar essas"
+            ]
+
+            pedido_encomenda = any(
+                frase in texto_lower
+                for frase in frases_encomenda
             )
 
-            gravar_mensagem(
-                sender,
-                "entrada",
-                conteudo=text,
-                tipo="texto",
-                nome=nome_cliente
+            if pedido_encomenda:
+                send_message(
+                    sender,
+                    "Obrigado pelo pedido 👍 "
+                    "Vamos tratar disso e confirmar consigo a encomenda."
+                )
+                return "EVENT_RECEIVED", 200
+
+
+            # Cliente quer ver jantes para outro carro
+            outro_carro = any(
+                frase in texto_lower
+                for frase in [
+                    "outro carro",
+                    "outro veículo",
+                    "outro veiculo",
+                    "outra viatura",
+                    "novo carro"
+                ]
             )
 
+            if outro_carro:
+                dados_clientes.pop(sender, None)
+                conversas.pop(sender, None)
+
+                send_message(
+                    sender,
+                    "Claro 👍 Diga-me a marca, o modelo e o ano do outro carro."
+                )
+                return "EVENT_RECEIVED", 200
+
+
+            # Cliente quer outro tamanho para o mesmo carro
+            outro_tamanho = any(
+                frase in texto_lower
+                for frase in [
+                    "outro tamanho",
+                    "noutro tamanho",
+                    "outra medida",
+                    "noutra medida"
+                ]
+            )
+
+            if outro_tamanho:
+                if sender in dados_clientes:
+                    dados_clientes[sender]["tamanho"] = None
+
+                send_message(
+                    sender,
+                    "Claro 👍 Que tamanho de jante pretende ver?"
+                )
+                return "EVENT_RECEIVED", 200
+
+
+            # Se apenas agradecer, responder e TERMINAR
+            if texto_lower in [
+                "obrigado",
+                "obrigada",
+                "obg",
+                "thanks"
+            ]:
+                send_message(
+                    sender,
+                    "De nada 😊 Estamos disponíveis!"
+                )
+                return "EVENT_RECEIVED", 200
             cumprimentos = [
                 "olá",
                 "ola",
