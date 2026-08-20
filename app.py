@@ -25,6 +25,7 @@ def init_db():
 
     with psycopg.connect(DATABASE_URL) as conn:
         with conn.cursor() as cur:
+
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS conversas (
                     id SERIAL PRIMARY KEY,
@@ -39,6 +40,7 @@ def init_db():
                     ultima_mensagem TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS mensagens (
                     id SERIAL PRIMARY KEY,
@@ -50,15 +52,15 @@ def init_db():
                     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS mensagens_processadas (
-            message_id TEXT PRIMARY KEY,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-""")
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS mensagens_processadas (
+                    message_id TEXT PRIMARY KEY,
+                    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
         conn.commit()
-
-
 def gravar_mensagem(
     telefone,
     direcao,
