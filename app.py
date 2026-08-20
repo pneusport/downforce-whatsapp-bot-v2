@@ -1197,25 +1197,25 @@ def webhook():
                 )
                 return "EVENT_RECEIVED", 200
                 if message.get("type") == "text":
-            text = message["text"]["body"].strip()
-            texto_lower = text.lower().strip()
+                text = message["text"]["body"].strip()
+                texto_lower = text.lower().strip()
 
-            # Perguntas sobre preços
-            palavras_preco = [
-                "preço",
-                "preços",
-                "preco",
-                "precos",
-                "quanto custa",
-                "quanto custam",
-                "quanto fica",
-                "qual o valor",
-                "valor"
-            ]
+                # Perguntas sobre preços
+                palavras_preco = [
+                    "preço",
+                    "preços",
+                    "preco",
+                    "precos",
+                    "quanto custa",
+                    "quanto custam",
+                    "quanto fica",
+                    "qual o valor",
+                    "valor"
+                 ]
 
-            pedido_preco = any(
-                palavra in texto_lower
-                for palavra in palavras_preco
+                pedido_preco = any(
+                    palavra in texto_lower
+                    for palavra in palavras_preco
             )
 
             if pedido_preco:
