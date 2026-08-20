@@ -51,7 +51,12 @@ def init_db():
                     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS mensagens_processadas (
+            message_id TEXT PRIMARY KEY,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+""")
         conn.commit()
 
 
@@ -104,7 +109,29 @@ def gravar_mensagem(
 
     except Exception as e:
         print("ERRO BASE DE DADOS:", repr(e), flush=True)
+def marcar_mensagem_processada(message_id):
+    if not DATABASE_URL:
+        return True
 
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO mensagens_processadas (message_id)
+                    VALUES (%s)
+                    ON CONFLICT (message_id) DO NOTHING
+                    RETURNING message_id
+                """, (message_id,))
+
+                resultado = cur.fetchone()
+                conn.commit()
+
+                # Se não inseriu, esta mensagem já tinha sido processada
+                return resultado is not None
+
+    except Exception as e:
+        print("ERRO DEDUP WEBHOOK:", repr(e), flush=True)
+        return True
 try:
     init_db()
     print("BASE DE DADOS OK", flush=True)
@@ -1115,6 +1142,18 @@ def webhook():
 
         message = value["messages"][0]
         sender = message["from"]
+
+        message_id = message.get("id")
+
+        if message_id:
+            primeira_vez = marcar_mensagem_processada(message_id)
+
+            if not primeira_vez:
+                print(
+                    f"WEBHOOK DUPLICADO IGNORADO: {message_id}",
+                    flush=True
+                )
+                return "EVENT_RECEIVED", 200
 
         if message.get("type") == "text":
             text = message["text"]["body"].strip()
