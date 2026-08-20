@@ -1162,7 +1162,6 @@ def webhook():
                     flush=True
                 )
                 return "EVENT_RECEIVED", 200
-
         if message.get("type") == "text":
             text = message["text"]["body"].strip()
             texto_lower = text.lower().strip()
@@ -1189,6 +1188,12 @@ def webhook():
                 "podes enviar estas",
                 "pode enviar essas",
                 "podes enviar essas"
+                "manda",
+                "mandar",
+                "envia",
+                "enviar",
+                "separa",
+                "separar",
             ]
 
             pedido_encomenda = any(
@@ -1218,12 +1223,9 @@ def webhook():
             )
 
             if outro_carro:
-                dados_clientes.pop(sender, None)
-                conversas.pop(sender, None)
-
                 send_message(
                     sender,
-                    "Claro 👍 Diga-me a marca, o modelo e o ano do outro carro."
+                    "Obrigado pelo pedido 👍 Vamos tratar disso."
                 )
                 return "EVENT_RECEIVED", 200
 
@@ -1248,7 +1250,6 @@ def webhook():
                     "Claro 👍 Que tamanho de jante pretende ver?"
                 )
                 return "EVENT_RECEIVED", 200
-
 
             # Se apenas agradecer, responder e TERMINAR
             if texto_lower in [
@@ -1321,7 +1322,6 @@ def webhook():
                     return "EVENT_RECEIVED", 200
 
                 enviar_jantes_site(sender, dados)
-
                 return "EVENT_RECEIVED", 200
 
             except Exception as e:
