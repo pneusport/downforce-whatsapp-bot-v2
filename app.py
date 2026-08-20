@@ -990,14 +990,25 @@ def enviar_jantes_site(sender, dados):
         )
 
         for jante in jantes:
-            chave = jante.get("imagem") or jante.get("nome")
+            nome = (jante.get("nome") or "").strip().lower()
+            imagem = (jante.get("imagem") or "").strip()
+
+            # Usar o nome como identificador principal.
+            # Se não houver nome, usar a imagem.
+            chave = nome if nome else imagem
+
+            if not chave:
+                continue
 
             if chave in vistos:
+                print(
+                    f"JANTE DUPLICADA IGNORADA: {jante.get('nome')}",
+                    flush=True
+                )
                 continue
 
             vistos.add(chave)
             todas_jantes.append(jante)
-
     if not todas_jantes:
         send_message(
             sender,
