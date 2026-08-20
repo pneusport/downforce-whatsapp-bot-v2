@@ -1226,36 +1226,61 @@ def webhook():
                             "https://store.downforce.pt/"
                     )
                     return "EVENT_RECEIVED", 200
-            # --------------------------------------------------
-            # RESPOSTAS DEPOIS DE MOSTRAR AS JANTES
-            # --------------------------------------------------
+                    # --------------------------------------------------
+                    # RESPOSTAS DEPOIS DE MOSTRAR AS JANTES
+                    # --------------------------------------------------
 
-            # Cliente quer encomendar / separar algumas jantes
-            frases_encomenda = [
-                "manda vir",
-                "mandar vir",
-                "quero encomendar",
-                "encomenda",
-                "encomendar",
-                "separa estas",
-                "separa essas",
-                "separar estas",
-                "separar essas",
-                "manda estas",
-                "manda essas",
-                "envia estas",
-                "envia essas",
-                "pode enviar estas",
-                "podes enviar estas",
-                "pode enviar essas",
-                "podes enviar essas"
-                "manda",
-                "mandar",
-                "envia",
-                "enviar",
-                "separa",
-                "separar",
+                    # Cliente quer encomendar / separar algumas jantes
+                    frases_encomenda = [
+                    "manda vir",
+                    "mandar vir",
+                    "quero encomendar",
+                    "encomenda",
+                    "encomendar",
+                    "separa estas",
+                    "separa essas",
+                    "separar estas",
+                    "separar essas",
+                    "manda estas",
+                    "manda essas",
+                    "envia estas",
+                    "envia essas",
+                    "pode enviar estas",
+                    "podes enviar estas",
+                    "pode enviar essas",
+                    "podes enviar essas"
+                    "manda",
+                    "mandar",
+                    "envia",
+                    "enviar",
+                    "separa",
+                    "separar",
+                ]
+                    # Cliente quer ver mais opções, não encomendar
+                                # Cliente quer ver mais opções, não encomendar
+            frases_mais_opcoes = [
+                "mais opções",
+                "mais opcoes",
+                "mais fotos",
+                "envia mais",
+                "manda mais",
+                "mostra mais",
+                "tens mais",
+                "tem mais"
             ]
+
+            pedido_mais_opcoes = any(
+                frase in texto_lower
+                for frase in frases_mais_opcoes
+            )
+
+            if pedido_mais_opcoes:
+                send_message(
+                    sender,
+                    "Claro 👍 Se quiser ver mais opções, diga-me se pretende "
+                    "outro tamanho ou jantes para outro carro."
+                )
+                return "EVENT_RECEIVED", 200
 
             pedido_encomenda = any(
                 frase in texto_lower
