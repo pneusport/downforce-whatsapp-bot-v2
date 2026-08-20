@@ -1233,7 +1233,7 @@ def webhook():
                     # Cliente quer encomendar / separar algumas jantes
                     frases_encomenda = [
                     "manda vir",
-                    "mandar vir",
+                    "é mandar vir",
                     "quero encomendar",
                     "encomenda",
                     "encomendar",
