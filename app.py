@@ -23,10 +23,10 @@ def init_db():
         print("DATABASE_URL não configurada", flush=True)
         return
 
-    with psycopg.connect(DATABASE_URL) as conn:
-        with conn.cursor() as cur:
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
 
-            cur.execute("""
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS conversas (
                     id SERIAL PRIMARY KEY,
                     telefone TEXT UNIQUE NOT NULL,
@@ -41,7 +41,7 @@ def init_db():
                 )
             """)
 
-            cur.execute("""
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS mensagens (
                     id SERIAL PRIMARY KEY,
                     telefone TEXT NOT NULL,
@@ -53,14 +53,19 @@ def init_db():
                 )
             """)
 
-            cur.execute("""
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS mensagens_processadas (
                     message_id TEXT PRIMARY KEY,
                     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
 
-        conn.commit()
+            conn.commit()
+
+        print("BASE DE DADOS OK", flush=True)
+
+    except Exception as e:
+        print("ERRO INIT DB:", repr(e), flush=True)
 def gravar_mensagem(
     telefone,
     direcao,
