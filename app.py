@@ -166,11 +166,7 @@ def marcar_mensagem_processada(message_id):
 try:
     init_db()
     print("BASE DE DADOS OK", flush=True)
-except Exception as e:
-    print("ERRO INIT DB:", repr(e), flush=True)
-
-def cb_compativel(cb_jante, cb_carro):
-    def bmw_serie_1_a_5(dados):
+def bmw_serie_1_a_5(dados):
     marca = str(dados.get("marca") or "").strip().lower()
     modelo = str(dados.get("modelo") or "").strip().lower()
 
@@ -179,7 +175,7 @@ def cb_compativel(cb_jante, cb_carro):
 
     modelo = modelo.replace("série", "serie")
 
-    # Série 1, Série 2, Série 3, Série 4, Série 5
+    # Série 1, 2, 3, 4 ou 5
     if re.search(r"\bserie\s*[1-5]\b", modelo):
         return True
 
@@ -209,6 +205,9 @@ def interpretar_configuracao_bmw(texto):
         return "4_iguais"
 
     return None
+
+
+def cb_compativel(cb_jante, cb_carro):
     try:
         cb_jante = float(str(cb_jante).replace(",", "."))
         cb_carro = float(str(cb_carro).replace(",", "."))
