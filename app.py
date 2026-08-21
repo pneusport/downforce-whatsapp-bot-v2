@@ -1340,6 +1340,8 @@ def verify_webhook():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    global PALAVRAS_PRECO
+    
     data = request.get_json()
 
     print("WEBHOOK RECEBIDO:", data, flush=True)
