@@ -1449,44 +1449,42 @@ def webhook():
                 "pode enviar essas",
                 "podes enviar essas"
             ]
-                    # Cliente quer ver mais opções, não encomendar
-                    # Cliente quer ver mais opções, não encomendar
-            frases_mais_opcoes = [
-                "mais opções",
-                "mais opcoes",
-                "mais fotos",
-                "envia mais",
-                "manda mais",
-                "mostra mais",
-                "tens mais",
-                "tem mais"
-            ]
+        # Cliente quer ver mais opções, não encomendar
+        frases_mais_opcoes = [
+            "mais opções",
+            "mais opcoes",
+            "mais fotos",
+            "envia mais",
+            "manda mais",
+            "mostra mais",
+            "tens mais",
+            "tem mais"
+        ]
 
-            pedido_mais_opcoes = any(
-                frase in texto_lower
-                for frase in frases_mais_opcoes
+        pedido_mais_opcoes = any(
+            frase in texto_lower
+            for frase in frases_mais_opcoes
+        )
+
+        if pedido_mais_opcoes:
+            send_message(
+                sender,
+                "Claro 👍 Se quiser ver mais opções, diga-me se pretende "
+                "outro tamanho ou jantes para outro carro."
             )
+            return "EVENT_RECEIVED", 200
+        pedido_encomenda = any(
+            frase in texto_lower
+            for frase in frases_encomenda
+        )
 
-            if pedido_mais_opcoes:
-                send_message(
-                    sender,
-                    "Claro 👍 Se quiser ver mais opções, diga-me se pretende "
-                    "outro tamanho ou jantes para outro carro."
-                )
-                return "EVENT_RECEIVED", 200
-
-            pedido_encomenda = any(
-                frase in texto_lower
-                for frase in frases_encomenda
+        if pedido_encomenda:
+            send_message(
+                sender,
+                "Obrigado pelo pedido 👍 "
+                "Vamos tratar disso e confirmar consigo a encomenda."
             )
-
-            if pedido_encomenda:
-                send_message(
-                    sender,
-                    "Obrigado pelo pedido 👍 "
-                    "Vamos tratar disso e confirmar consigo a encomenda."
-                )
-                return "EVENT_RECEIVED", 200
+            return "EVENT_RECEIVED", 200
 
 
             # Cliente quer ver jantes para outro carro
