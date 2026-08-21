@@ -118,7 +118,6 @@ def gravar_mensagem(
     except Exception as e:
         print("ERRO BASE DE DADOS:", repr(e), flush=True)
 def marcar_mensagem_processada(message_id):
-
     if not message_id:
         return False
 
@@ -132,7 +131,6 @@ def marcar_mensagem_processada(message_id):
     try:
         with psycopg.connect(DATABASE_URL) as conn:
             with conn.cursor() as cur:
-
                 cur.execute("""
                     INSERT INTO mensagens_processadas (message_id)
                     VALUES (%s)
@@ -141,22 +139,23 @@ def marcar_mensagem_processada(message_id):
                 """, (message_id,))
 
                 resultado = cur.fetchone()
-                conn.commit()
 
-                if resultado is not None:
-                    print(
-                        f"NOVA MENSAGEM: {message_id}",
-                        flush=True
-                    )
-                    return True
+            conn.commit()
 
-                print(
-                    f"MENSAGEM DUPLICADA BLOQUEADA: {message_id}",
-                    flush=True
-                )
-                return False
+        if resultado is not None:
+            print(
+                f"NOVA MENSAGEM: {message_id}",
+                flush=True
+            )
+            return True
 
-        except Exception as e:
+        print(
+            f"MENSAGEM DUPLICADA BLOQUEADA: {message_id}",
+            flush=True
+        )
+        return False
+
+    except Exception as e:
         print(
             "ERRO DEDUP WEBHOOK - BLOQUEAR POR SEGURANÇA:",
             repr(e),
