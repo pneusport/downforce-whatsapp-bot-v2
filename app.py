@@ -202,7 +202,36 @@ def interpretar_configuracao_bmw(texto):
         return "4_iguais"
 
     return None
+def mercedes_precisa_configuracao(dados):
+    marca = str(dados.get("marca") or "").strip().lower()
+    modelo = str(dados.get("modelo") or "").strip().lower()
 
+    if marca not in ["mercedes", "mercedes-benz", "mercedes benz"]:
+        return False
+
+    modelo = modelo.replace("classe", "").strip()
+
+    # Classe A, B e CLA -> NÃO perguntar 2+2
+    if re.search(r"\bcla\b", modelo):
+        return False
+
+    if re.search(r"^a(?:\s|\d|$)", modelo):
+        return False
+
+    if re.search(r"^b(?:\s|\d|$)", modelo):
+        return False
+
+    # Classe C, E e S -> perguntar sempre
+    if re.search(r"^c(?:\s|\d|$)", modelo):
+        return True
+
+    if re.search(r"^e(?:\s|\d|$)", modelo):
+        return True
+
+    if re.search(r"^s(?:\s|\d|$)", modelo):
+        return True
+
+    return False
 
 def cb_compativel(cb_jante, cb_carro):
     try:
@@ -276,33 +305,8 @@ def atualizar_dados_cliente(texto, sender):
         "marca": None,
         "modelo": None,
         "ano": None,
-            # BMW Série 1 a Série 5:
-            # perguntar 2+2 ou 4 iguais antes de pesquisar
-            if bmw_precisa_configuracao(dados):
-
-                configuracao = dados_clientes.get(sender, {}).get("configuracao")
-
-                if not configuracao:
-                    configuracao_resposta = interpretar_configuracao_bmw(texto_lower)
-
-                    if configuracao_resposta:
-                        dados_clientes.setdefault(sender, {})
-                        dados_clientes[sender]["configuracao"] = configuracao_resposta
-                        dados["configuracao"] = configuracao_resposta
-
-                    else:
-                        send_message(
-                            sender,
-                            "Neste BMW temos duas configurações disponíveis 😊\n\n"
-                            "Pretende:\n"
-                            "• 2+2 — medidas diferentes à frente e atrás\n"
-                            "• 4 jantes iguais"
-                        )
-                        return "EVENT_RECEIVED", 200
-
-                else:
-                    dados["configuracao"] = configuracao
-        "tamanho": None
+        "tamanho": None,
+        "configuracao": None
     }).copy()
 
     texto_limpo = texto.strip()
@@ -1590,17 +1594,24 @@ def webhook():
                         "Perfeito 👍 E de que ano é o carro?"
                     )
                     return "EVENT_RECEIVED", 200
-                # BMW Série 1 a 5 - perguntar configuração antes de procurar jantes
-                if bmw_serie_1_a_5(dados) and not dados.get("configuracao"):
-                    send_message(
-                        sender,
-                        "Para este BMW preciso de confirmar a configuração 😊\n\n"
-                        "Pretende:\n"
-                        "• *2+2* — 2 jantes à frente + 2 jantes atrás\n"
-                        "• *4 iguais* — as 4 jantes com a mesma medida"
-                    )
-                    return "EVENT_RECEIVED", 200
-                if not dados.get("tamanho"):
+                            # BMW Série 1-5 ou Mercedes Classe C/E/S
+            # perguntar configuração antes de procurar jantes
+            precisa_configuracao = (
+                bmw_serie_1_a_5(dados)
+                or mercedes_precisa_configuracao(dados)
+            )
+
+            if precisa_configuracao and not dados.get("configuracao"):
+                send_message(
+                    sender,
+                    "Para este veículo preciso de confirmar a configuração 😊\n\n"
+                    "Pretende:\n"
+                    "• *2+2* — 2 jantes à frente + 2 jantes atrás\n"
+                    "• *4 iguais* — as 4 jantes com a mesma medida"
+                )
+                return "EVENT_RECEIVED", 200
+
+            if not dados.get("tamanho"):
                     send_message(
                         sender,
                         'Ótimo 😊 Que tamanho de jante pretende? Por exemplo: 15", 16", 17", 18"...'
