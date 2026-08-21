@@ -1492,7 +1492,6 @@ def webhook():
                 )
                 return "EVENT_RECEIVED", 200
 
-
             # Cliente quer outro tamanho para o mesmo carro
             outro_tamanho = any(
                 frase in texto_lower
