@@ -1404,39 +1404,34 @@ def webhook():
                     "Se quiser, responda *falar com comercial* e envio-lhe o contacto direto."
                 )
                 return "EVENT_RECEIVED", 200
-                
-                    # --------------------------------------------------
-                    # RESPOSTAS DEPOIS DE MOSTRAR AS JANTES
-                    # --------------------------------------------------
 
-                    # Cliente quer encomendar / separar algumas jantes
-                    frases_encomenda = [
-                    "manda vir",
-                    "é mandar vir",
-                    "quero encomendar",
-                    "encomenda",
-                    "encomendar",
-                    "separa estas",
-                    "separa essas",
-                    "separar estas",
-                    "separar essas",
-                    "manda estas",
-                    "manda essas",
-                    "envia estas",
-                    "envia essas",
-                    "pode enviar estas",
-                    "podes enviar estas",
-                    "pode enviar essas",
-                    "podes enviar essas"
-                    "manda",
-                    "mandar",
-                    "envia",
-                    "enviar",
-                    "separa",
-                    "separar",
-                ]
+            # -----------------------------------------------
+            # RESPOSTAS DEPOIS DE MOSTRAR AS JANTES
+            # -----------------------------------------------
+
+            # Cliente quer encomendar / separar algumas jantes
+            frases_encomenda = [
+                "manda vir",
+                "é mandar vir",
+                "quero mandar vir",
+                "quero encomendar",
+                "encomenda",
+                "encomendar",
+                "separa estas",
+                "separa essas",
+                "separar estas",
+                "separar essas",
+                "manda estas",
+                "manda essas",
+                "envia estas",
+                "envia essas",
+                "pode enviar estas",
+                "podes enviar estas",
+                "pode enviar essas",
+                "podes enviar essas"
+            ]
                     # Cliente quer ver mais opções, não encomendar
-                                # Cliente quer ver mais opções, não encomendar
+                    # Cliente quer ver mais opções, não encomendar
             frases_mais_opcoes = [
                 "mais opções",
                 "mais opcoes",
