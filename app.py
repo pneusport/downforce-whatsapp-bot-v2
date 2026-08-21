@@ -1557,7 +1557,7 @@ def webhook():
                 configuracao_guardada = dados_clientes.get(sender, {}).get("configuracao")
 
                 if configuracao_guardada:
-                dados["configuracao"] = configuracao_guardada
+                    dados["configuracao"] = configuracao_guardada
 
                 if not dados.get("marca") and dados.get("modelo"):
                     marca_encontrada = descobrir_marca_pelo_modelo(
