@@ -1542,55 +1542,55 @@ def webhook():
                     "Qual é a marca e o modelo?"
                 )
                 return "EVENT_RECEIVED", 200
-            try:
-                dados = atualizar_dados_cliente(text, sender)
+                    try:
+            dados = atualizar_dados_cliente(text, sender)
 
-                # Ver se o cliente respondeu 2+2 ou 4 iguais
-                configuracao_bmw = interpretar_configuracao_bmw(texto_lower)
+            # Ver se o cliente respondeu 2+2 ou 4 iguais
+            configuracao_bmw = interpretar_configuracao_bmw(texto_lower)
 
-                if configuracao_bmw:
-                    dados_clientes.setdefault(sender, {})
-                    dados_clientes[sender]["configuracao"] = configuracao_bmw
-                    dados["configuracao"] = configuracao_bmw
+            if configuracao_bmw:
+                dados_clientes.setdefault(sender, {})
+                dados_clientes[sender]["configuracao"] = configuracao_bmw
+                dados["configuracao"] = configuracao_bmw
 
-                # Recuperar configuração previamente escolhida
-                configuracao_guardada = dados_clientes.get(sender, {}).get("configuracao")
+            # Recuperar configuração previamente escolhida
+            configuracao_guardada = dados_clientes.get(sender, {}).get("configuracao")
 
-                if configuracao_guardada:
-                    dados["configuracao"] = configuracao_guardada
+            if configuracao_guardada:
+                dados["configuracao"] = configuracao_guardada
 
-                if not dados.get("marca") and dados.get("modelo"):
-                    marca_encontrada = descobrir_marca_pelo_modelo(
-                        dados["modelo"],
-                        dados.get("ano")
-                    )
+            if not dados.get("marca") and dados.get("modelo"):
+                marca_encontrada = descobrir_marca_pelo_modelo(
+                    dados["modelo"],
+                    dados.get("ano")
+                )
 
-                    if marca_encontrada:
-                        dados["marca"] = marca_encontrada
-                        dados_clientes[sender]["marca"] = marca_encontrada
+                if marca_encontrada:
+                    dados["marca"] = marca_encontrada
+                    dados_clientes[sender]["marca"] = marca_encontrada
 
-                if not dados.get("marca"):
-                    send_message(
-                        sender,
-                        "Só preciso de confirmar uma coisa 😊 Qual é a marca do carro?"
-                    )
-                    return "EVENT_RECEIVED", 200
+            if not dados.get("marca"):
+                send_message(
+                    sender,
+                    "Só preciso de confirmar uma coisa 😊 Qual é a marca do carro?"
+                )
+                return "EVENT_RECEIVED", 200
 
-                if not dados.get("modelo"):
-                    send_message(
-                        sender,
-                        "Obrigado 😊 Qual é o modelo do carro?"
-                    )
-                    return "EVENT_RECEIVED", 200
+            if not dados.get("modelo"):
+                send_message(
+                    sender,
+                    "Obrigado 😊 Qual é o modelo do carro?"
+                )
+                return "EVENT_RECEIVED", 200
 
-                if not dados.get("ano"):
-                    send_message(
-                        sender,
-                        "Perfeito 👍 E de que ano é o carro?"
-                    )
-                    return "EVENT_RECEIVED", 200
-                            # BMW Série 1-5 ou Mercedes Classe C/E/S
-            # perguntar configuração antes de procurar jantes
+            if not dados.get("ano"):
+                send_message(
+                    sender,
+                    "Perfeito 👍 E de que ano é o carro?"
+                )
+                return "EVENT_RECEIVED", 200
+
+            # BMW Série 1-5 ou Mercedes Classe C/E/S
             precisa_configuracao = (
                 bmw_serie_1_a_5(dados)
                 or mercedes_precisa_configuracao(dados)
@@ -1607,29 +1607,29 @@ def webhook():
                 return "EVENT_RECEIVED", 200
 
             if not dados.get("tamanho"):
-                    send_message(
-                        sender,
-                        'Ótimo 😊 Que tamanho de jante pretende? Por exemplo: 15", 16", 17", 18"...'
-                    )
-                    return "EVENT_RECEIVED", 200
-
-                enviar_jantes_site(sender, dados)
-                return "EVENT_RECEIVED", 200
-
-            except Exception as e:
-                print(
-                    "ERRO PESQUISA SITE:",
-                    repr(e),
-                    flush=True
-                )
-
                 send_message(
                     sender,
-                    "Peço desculpa 😊 Neste momento não consegui consultar o catálogo. "
-                    "Pode tentar novamente dentro de alguns instantes?"
+                    'Ótimo 😊 Que tamanho de jante pretende? Por exemplo: 15", 16", 17", 18"...'
                 )
-
                 return "EVENT_RECEIVED", 200
+
+            enviar_jantes_site(sender, dados)
+            return "EVENT_RECEIVED", 200
+
+        except Exception as e:
+            print(
+                "ERRO PESQUISA SITE:",
+                repr(e),
+                flush=True
+            )
+
+            send_message(
+                sender,
+                "Peço desculpa 😊 Neste momento não consegui consultar o catálogo. "
+                "Pode tentar novamente dentro de alguns instantes?"
+            )
+
+            return "EVENT_RECEIVED", 200
 
     except Exception as e:
         print("ERRO:", str(e), flush=True)
