@@ -1074,7 +1074,6 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
                 "et": et_match.group(1) if et_match else None,
                 "composto": composto
             })
-            })
 
             novos += 1
 
