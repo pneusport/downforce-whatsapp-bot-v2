@@ -1352,7 +1352,7 @@ def webhook():
         if "messages" not in value:
             return "EVENT_RECEIVED", 200
 
-                message = value["messages"][0]
+        message = value["messages"][0]
         sender = message["from"]
 
         message_id = message.get("id")
