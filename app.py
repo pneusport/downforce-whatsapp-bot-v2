@@ -1482,13 +1482,13 @@ def webhook():
                 ]
             )
 
-                if outro_carro:
-                    if sender in dados_clientes:
-                        dados_clientes[sender].pop("configuracao", None)
+            if outro_carro:
+                if sender in dados_clientes:
+                    dados_clientes[sender].pop("configuracao", None)
 
-                    send_message(
-                        sender,
-                        "Obrigado pelo pedido 👍 Vamos tratar disso."
+                send_message(
+                    sender,
+                    "Obrigado pelo pedido 👍 Vamos tratar disso."
                 )
                 return "EVENT_RECEIVED", 200
 
