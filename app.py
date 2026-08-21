@@ -15,9 +15,24 @@ VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "downforce2026")
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 DATABASE_URL = os.getenv("DATABASE_URL")
-COMERCIAL_WHATSAPP = os.getenv("351910459268", "")
+COMERCIAL_WHATSAPP = os.getenv("COMERCIAL_WHATSAPP", "")
+
+PALAVRAS_PRECO = [
+    "preço",
+    "preços",
+    "preco",
+    "precos",
+    "quanto custa",
+    "quanto custam",
+    "quanto fica",
+    "quanto ficam",
+    "qual o valor",
+    "valor"
+]
 
 client = OpenAI()
+conversas = {}
+dados_clientes = {}
 conversas = {}
 dados_clientes = {}
 def init_db():
