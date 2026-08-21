@@ -1542,7 +1542,7 @@ def webhook():
                     "Qual é a marca e o modelo?"
                 )
                 return "EVENT_RECEIVED", 200
-            try:
+        try:
                 dados = atualizar_dados_cliente(text, sender)
 
                 # Ver se o cliente respondeu 2+2 ou 4 iguais
