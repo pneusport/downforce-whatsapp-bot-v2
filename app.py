@@ -1392,18 +1392,18 @@ def webhook():
                         "valor"
                      ]
     
-                    pedido_preco = any(
-                        palavra in texto_lower
-                        for palavra in palavras_preco
-                    )    
+            pedido_preco = any(
+                palavra in texto_lower
+                for palavra in palavras_preco
+            )
 
-                     if pedido_preco:
-                        send_message(
-                            sender,
-                            "Para informações sobre preços é necessário falar com um dos nossos comerciais 😊\n\n"
-                            "Se quiser, responda *falar com comercial* e envio-lhe o contacto direto."
-                     )
-                     return "EVENT_RECEIVED", 200
+            if pedido_preco:
+                send_message(
+                    sender,
+                    "Para informações sobre preços é necessário falar com um dos nossos comerciais 😊\n\n"
+                    "Se quiser, responda *falar com comercial* e envio-lhe o contacto direto."
+                )
+                return "EVENT_RECEIVED", 200
                 
                     # --------------------------------------------------
                     # RESPOSTAS DEPOIS DE MOSTRAR AS JANTES
