@@ -1544,19 +1544,20 @@ def webhook():
                 return "EVENT_RECEIVED", 200
             try:
                 dados = atualizar_dados_cliente(text, sender)
-                    # Ver se o cliente acabou de responder 2+2 ou 4 iguais
-                    configuracao_bmw = interpretar_configuracao_bmw(texto_lower)
 
-                    if configuracao_bmw:
+                # Ver se o cliente respondeu 2+2 ou 4 iguais
+                configuracao_bmw = interpretar_configuracao_bmw(texto_lower)
+
+                if configuracao_bmw:
                     dados_clientes.setdefault(sender, {})
                     dados_clientes[sender]["configuracao"] = configuracao_bmw
                     dados["configuracao"] = configuracao_bmw
 
-                    # Recuperar configuração previamente escolhida
-                    configuracao_guardada = dados_clientes.get(sender, {}).get("configuracao")
+                # Recuperar configuração previamente escolhida
+                configuracao_guardada = dados_clientes.get(sender, {}).get("configuracao")
 
-                    if configuracao_guardada:
-                    dados["configuracao"] = configuracao_guardada
+                if configuracao_guardada:
+                dados["configuracao"] = configuracao_guardada
 
                 if not dados.get("marca") and dados.get("modelo"):
                     marca_encontrada = descobrir_marca_pelo_modelo(
