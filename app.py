@@ -1352,7 +1352,7 @@ def webhook():
         if "messages" not in value:
             return "EVENT_RECEIVED", 200
 
-        message = value["messages"][0]
+                message = value["messages"][0]
         sender = message["from"]
 
         message_id = message.get("id")
@@ -1366,69 +1366,70 @@ def webhook():
                     flush=True
                 )
                 return "EVENT_RECEIVED", 200
-                if message.get("type") == "text":
-                    text = message["text"]["body"].strip()
-                    texto_lower = text.lower().strip()
-                    # Palavras relacionadas com preço
-                    # Cliente quer falar com um comercial
-                    frases_comercial = [
-                    "falar com comercial",
-                    "falar com um comercial",
-                    "quero falar com comercial",
-                    "quero falar com um comercial",
-                    "passa para o comercial",
-                    "passar para o comercial",
-                    "falar com assistente",
-                    "falar com um assistente",
-                    "quero falar com assistente",
-                    "quero falar com um assistente",
-                    "passa para um assistente"
-                ]    
 
-                pedido_comercial = any(
-                    frase in texto_lower
-                    for frase in frases_comercial
-                )
+        # A PARTIR DAQUI GARANTIMOS QUE EXISTE texto_lower
+        if message.get("type") != "text":
+            return "EVENT_RECEIVED", 200
 
-                if pedido_comercial:
-                    send_message(
-                        sender,
-                        "Claro 👍 Pode falar diretamente com um dos nossos comerciais aqui:\n\n"
-                        f"https://wa.me/{COMERCIAL_WHATSAPP}"
-                    )
-                    return "EVENT_RECEIVED", 200
-                    # Perguntas sobre preços
-                    PALAVRAS_PRECO = [
-                        "preço",
-                        "preços",
-                        "preco",
-                        "precos",
-                        "quanto custa",
-                        "quanto custam",
-                        "quanto fica",
-                        "qual o valor",
-                        "valor"
-                     ]
-    
-            pedido_preco = any(
-                palavra in texto_lower
-                for palavra in PALAVRAS_PRECO
-            )
+        text = message["text"]["body"].strip()
+        texto_lower = text.lower().strip()
 
-            if pedido_preco:
-                send_message(
-                    sender,
-                    "Para informações sobre preços é necessário falar com um dos nossos comerciais 😊\n\n"
-                    "Se quiser, responda *falar com comercial* e envio-lhe o contacto direto."
+        # daqui para baixo:
+        # comercial
+        # preços
+        # encomenda
+        # outro carro
+        # outro tamanho
+        # cumprimentos
+        # etc.
+        # Palavras relacionadas com preço
+        # Cliente quer falar com um comercial
+        frases_comercial = [
+            "falar com comercial",
+            "falar com um comercial",
+            "quero falar com comercial",
+            "quero falar com um comercial",
+            "passa para o comercial",
+            "passar para o comercial",
+            "falar com assistente",
+            "falar com um assistente",
+            "quero falar com assistente",
+            "quero falar com um assistente",
+            "passa para um assistente"
+        ]    
+
+        pedido_comercial = any(
+                frase in texto_lower
+                for frase in frases_comercial
+        )
+
+        if pedido_comercial:
+            send_message(
+                sender,
+                "Claro 👍 Pode falar diretamente com um dos nossos comerciais aqui:\n\n"
+                f"https://wa.me/{COMERCIAL_WHATSAPP}"
                 )
                 return "EVENT_RECEIVED", 200
+    
+        pedido_preco = any(
+            palavra in texto_lower
+            for palavra in PALAVRAS_PRECO
+        )
 
-            # -----------------------------------------------
-            # RESPOSTAS DEPOIS DE MOSTRAR AS JANTES
-            # -----------------------------------------------
+        if pedido_preco:
+            send_message(
+                sender,
+                "Para informações sobre preços é necessário falar com um dos nossos comerciais 😊\n\n"
+                "Se quiser, responda *falar com comercial* e envio-lhe o contacto direto."
+            )
+            return "EVENT_RECEIVED", 200
 
-            # Cliente quer encomendar / separar algumas jantes
-            frases_encomenda = [
+        # -----------------------------------------------
+        # RESPOSTAS DEPOIS DE MOSTRAR AS JANTES
+        # -----------------------------------------------
+
+        # Cliente quer encomendar / separar algumas jantes
+        frases_encomenda = [
                 "manda vir",
                 "é mandar vir",
                 "quero mandar vir",
@@ -1520,7 +1521,6 @@ def webhook():
                     "noutra medida"
                 ]
             )
-
             if outro_tamanho:
                 if sender in dados_clientes:
                     dados_clientes[sender]["tamanho"] = None
