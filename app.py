@@ -1368,18 +1368,6 @@ def webhook():
                     text = message["text"]["body"].strip()
                     texto_lower = text.lower().strip()
                     # Palavras relacionadas com preço
-                    PALAVRAS_PRECO = [
-                    "preço",
-                    "preços",
-                    "preco",
-                    "precos",
-                    "quanto custa",
-                    "quanto custam",
-                    "quanto fica",
-                    "quanto ficam",
-                    "qual o valor",
-                    "valor"
-                ]
                     # Cliente quer falar com um comercial
                     frases_comercial = [
                     "falar com comercial",
