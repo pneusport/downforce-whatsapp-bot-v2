@@ -1368,7 +1368,7 @@ def webhook():
                     text = message["text"]["body"].strip()
                     texto_lower = text.lower().strip()
                     # Palavras relacionadas com preço
-                    palavras_preco = [
+                    PALAVRAS_PRECO = [
                     "preço",
                     "preços",
                     "preco",
@@ -1408,7 +1408,7 @@ def webhook():
                     )
                     return "EVENT_RECEIVED", 200
                     # Perguntas sobre preços
-                    palavras_preco = [
+                    PALAVRAS_PRECO = [
                         "preço",
                         "preços",
                         "preco",
