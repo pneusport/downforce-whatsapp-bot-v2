@@ -1,4 +1,5 @@
 from flask import Flask, request, Response, render_template_string
+import traceback
 import hmac
 import os
 import requests
@@ -1656,6 +1657,7 @@ def webhook():
                 repr(e),
                 flush=True
             )
+            traceback.print_exc()
 
             send_message(
                 sender,
