@@ -1408,8 +1408,8 @@ def webhook():
                 sender,
                 "Claro 👍 Pode falar diretamente com um dos nossos comerciais aqui:\n\n"
                 f"https://wa.me/{COMERCIAL_WHATSAPP}"
-                )
-                return "EVENT_RECEIVED", 200
+            )
+            return "EVENT_RECEIVED", 200
     
         pedido_preco = any(
             palavra in texto_lower
