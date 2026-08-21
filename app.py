@@ -1422,7 +1422,7 @@ def webhook():
     
             pedido_preco = any(
                 palavra in texto_lower
-                for palavra in palavras_preco
+                for palavra in PALAVRAS_PRECO
             )
 
             if pedido_preco:
