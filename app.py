@@ -15,6 +15,8 @@ VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "downforce2026")
 WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 DATABASE_URL = os.getenv("DATABASE_URL")
+COMERCIAL_WHATSAPP = os.getenv("351910459268", "")
+
 client = OpenAI()
 conversas = {}
 dados_clientes = {}
@@ -168,6 +170,45 @@ except Exception as e:
     print("ERRO INIT DB:", repr(e), flush=True)
 
 def cb_compativel(cb_jante, cb_carro):
+    def bmw_serie_1_a_5(dados):
+    marca = str(dados.get("marca") or "").strip().lower()
+    modelo = str(dados.get("modelo") or "").strip().lower()
+
+    if marca != "bmw":
+        return False
+
+    modelo = modelo.replace("série", "serie")
+
+    # Série 1, Série 2, Série 3, Série 4, Série 5
+    if re.search(r"\bserie\s*[1-5]\b", modelo):
+        return True
+
+    # 116d, 118d, 120i, 218d, 320d, 420i, 530d...
+    if re.search(r"\b[1-5]\d{2}[a-z]*\b", modelo):
+        return True
+
+    # M2, M3, M4, M5
+    if re.search(r"\bm[2-5]\b", modelo):
+        return True
+
+    return False
+
+
+def interpretar_configuracao_bmw(texto):
+    texto = texto.lower().strip()
+
+    if re.search(r"\b2\s*\+\s*2\b", texto):
+        return "2+2"
+
+    if any(x in texto for x in [
+        "4 iguais",
+        "quatro iguais",
+        "4 jantes iguais",
+        "todas iguais"
+    ]):
+        return "4_iguais"
+
+    return None
     try:
         cb_jante = float(str(cb_jante).replace(",", "."))
         cb_carro = float(str(cb_carro).replace(",", "."))
@@ -181,11 +222,90 @@ def cb_compativel(cb_jante, cb_carro):
         return True, False
 
     return True, True
+def obter_serie_bmw(dados):
+    marca = str(dados.get("marca") or "").strip().lower()
+    modelo = str(dados.get("modelo") or "").strip().lower()
+
+    if marca != "bmw":
+        return None
+
+    # Série 1 / Serie 1 / Series 1
+    match = re.search(r"\b(?:série|serie|series)\s*([1-5])\b", modelo)
+    if match:
+        return int(match.group(1))
+
+    # 118d, 120i, 218d, 320d, 420i, 530d...
+    modelo_limpo = modelo.replace(" ", "")
+    match = re.match(r"([1-5])\d{2}[a-z]*", modelo_limpo)
+
+    if match:
+        return int(match.group(1))
+
+    # M2, M3, M4, M5
+    match = re.match(r"m([2-5])\b", modelo_limpo)
+
+    if match:
+        return int(match.group(1))
+
+    return None
+
+
+def bmw_precisa_configuracao(dados):
+    serie = obter_serie_bmw(dados)
+    return serie in [1, 2, 3, 4, 5]
+
+
+def interpretar_configuracao_bmw(texto):
+    texto = texto.lower().strip()
+
+    if any(x in texto for x in [
+        "2+2",
+        "2 + 2",
+        "duas + duas",
+        "duas e duas"
+    ]):
+        return "2+2"
+
+    if any(x in texto for x in [
+        "4 iguais",
+        "quatro iguais",
+        "4 jantes iguais",
+        "todas iguais"
+    ]):
+        return "4_iguais"
+
+    return None
 def atualizar_dados_cliente(texto, sender):
     estado = dados_clientes.get(sender, {
         "marca": None,
         "modelo": None,
         "ano": None,
+            # BMW Série 1 a Série 5:
+            # perguntar 2+2 ou 4 iguais antes de pesquisar
+            if bmw_precisa_configuracao(dados):
+
+                configuracao = dados_clientes.get(sender, {}).get("configuracao")
+
+                if not configuracao:
+                    configuracao_resposta = interpretar_configuracao_bmw(texto_lower)
+
+                    if configuracao_resposta:
+                        dados_clientes.setdefault(sender, {})
+                        dados_clientes[sender]["configuracao"] = configuracao_resposta
+                        dados["configuracao"] = configuracao_resposta
+
+                    else:
+                        send_message(
+                            sender,
+                            "Neste BMW temos duas configurações disponíveis 😊\n\n"
+                            "Pretende:\n"
+                            "• 2+2 — medidas diferentes à frente e atrás\n"
+                            "• 4 jantes iguais"
+                        )
+                        return "EVENT_RECEIVED", 200
+
+                else:
+                    dados["configuracao"] = configuracao
         "tamanho": None
     }).copy()
 
@@ -887,6 +1007,9 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
         novos = 0
 
         for bloco in blocos:
+            bloco_texto = bloco.get_text(" ", strip=True)
+            composto = "artigo composto" in bloco_texto.lower()
+
             stock_el = bloco.select_one(".prod-tag-stock")
             stock_texto = stock_el.get_text(" ", strip=True).lower() if stock_el else ""
 
@@ -945,10 +1068,12 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
 
             resultados.append({
                 "nome": nome.replace("JANTE ", "", 1),
-                "imagem": image_url,
+                "imagem": imagem_url,
                 "pcd": pcd_match.group(0) if pcd_match else None,
                 "cb": cb_match.group(1) if cb_match else None,
-                "et": et_match.group(1) if et_match else None
+                "et": et_match.group(1) if et_match else None,
+                "composto": composto
+            })
             })
 
             novos += 1
@@ -994,7 +1119,7 @@ def enviar_jantes_site(sender, dados):
     modelo = dados["modelo"]
     ano = dados["ano"]
     tamanho = dados["tamanho"]
-
+    configuracao = dados.get("configuracao")
     variantes = resolver_modelos_site(
         marca,
         modelo,
@@ -1010,7 +1135,7 @@ def enviar_jantes_site(sender, dados):
 
     todas_jantes = []
     vistos = set()
-
+    
     for variante in variantes:
         jantes = buscar_jantes_site(
             marca.upper(),
@@ -1018,7 +1143,18 @@ def enviar_jantes_site(sender, dados):
             variante["intervalo"],
             tamanho
         )
+        # BMW - filtrar configuração escolhida pelo cliente
+        if configuracao == "2+2":
+            jantes = [
+                jante for jante in jantes
+                if jante.get("composto") is True
+            ]
 
+        elif configuracao == "4_iguais":
+            jantes = [
+                jante for jante in jantes
+                if not jante.get("composto", False)
+            ]    
         for jante in jantes:
             nome = (jante.get("nome") or "").strip().lower()
             imagem = (jante.get("imagem") or "").strip()
@@ -1050,7 +1186,18 @@ def enviar_jantes_site(sender, dados):
         sender,
         f"Encontrei {len(todas_jantes)} opções disponíveis."
     )
+    if configuracao == "2+2":
+        send_message(
+            sender,
+            "Perfeito 👍 As referências que vou enviar são para configuração *2+2*:\n"
+            "2 jantes à frente + 2 jantes atrás."
+        )
 
+    elif configuracao == "4_iguais":
+        send_message(
+            sender,
+            "Perfeito 👍 Vou enviar apenas opções para *4 jantes iguais*."
+        )
     # Remover jantes/imagens duplicadas antes de enviar
     imagens_enviadas = set()
     contador = 0
@@ -1206,7 +1353,33 @@ def webhook():
                 if message.get("type") == "text":
                     text = message["text"]["body"].strip()
                     texto_lower = text.lower().strip()
+                    # Cliente quer falar com um comercial
+                    frases_comercial = [
+                    "falar com comercial",
+                    "falar com um comercial",
+                    "quero falar com comercial",
+                    "quero falar com um comercial",
+                    "passa para o comercial",
+                    "passar para o comercial",
+                    "falar com assistente",
+                    "falar com um assistente",
+                    "quero falar com assistente",
+                    "quero falar com um assistente",
+                    "passa para um assistente"
+                ]    
 
+                pedido_comercial = any(
+                    frase in texto_lower
+                    for frase in frases_comercial
+                )
+
+                if pedido_comercial:
+                    send_message(
+                        sender,
+                        "Claro 👍 Pode falar diretamente com um dos nossos comerciais aqui:\n\n"
+                        f"https://wa.me/{COMERCIAL_WHATSAPP}"
+                    )
+                    return "EVENT_RECEIVED", 200
                     # Perguntas sobre preços
                     palavras_preco = [
                         "preço",
@@ -1225,14 +1398,14 @@ def webhook():
                         for palavra in palavras_preco
                     )    
 
-                    if pedido_preco:
+                     if pedido_preco:
                         send_message(
                             sender,
-                            "Para informações sobre preços, por favor consulte um dos nossos assistentes "
-                            "ou visite a nossa loja online:\n"
-                            "https://store.downforce.pt/"
-                    )
-                    return "EVENT_RECEIVED", 200
+                            "Para informações sobre preços é necessário falar com um dos nossos comerciais 😊\n\n"
+                            "Se quiser, responda *falar com comercial* e envio-lhe o contacto direto."
+                     )
+                     return "EVENT_RECEIVED", 200
+                
                     # --------------------------------------------------
                     # RESPOSTAS DEPOIS DE MOSTRAR AS JANTES
                     # --------------------------------------------------
@@ -1315,10 +1488,13 @@ def webhook():
                 ]
             )
 
-            if outro_carro:
-                send_message(
-                    sender,
-                    "Obrigado pelo pedido 👍 Vamos tratar disso."
+                if outro_carro:
+                    if sender in dados_clientes:
+                        dados_clientes[sender].pop("configuracao", None)
+
+                    send_message(
+                        sender,
+                        "Obrigado pelo pedido 👍 Vamos tratar disso."
                 )
                 return "EVENT_RECEIVED", 200
 
@@ -1375,6 +1551,19 @@ def webhook():
                 return "EVENT_RECEIVED", 200
             try:
                 dados = atualizar_dados_cliente(text, sender)
+                    # Ver se o cliente acabou de responder 2+2 ou 4 iguais
+                    configuracao_bmw = interpretar_configuracao_bmw(texto_lower)
+
+                    if configuracao_bmw:
+                    dados_clientes.setdefault(sender, {})
+                    dados_clientes[sender]["configuracao"] = configuracao_bmw
+                    dados["configuracao"] = configuracao_bmw
+
+                    # Recuperar configuração previamente escolhida
+                    configuracao_guardada = dados_clientes.get(sender, {}).get("configuracao")
+
+                    if configuracao_guardada:
+                    dados["configuracao"] = configuracao_guardada
 
                 if not dados.get("marca") and dados.get("modelo"):
                     marca_encontrada = descobrir_marca_pelo_modelo(
@@ -1406,7 +1595,16 @@ def webhook():
                         "Perfeito 👍 E de que ano é o carro?"
                     )
                     return "EVENT_RECEIVED", 200
-
+                # BMW Série 1 a 5 - perguntar configuração antes de procurar jantes
+                if bmw_serie_1_a_5(dados) and not dados.get("configuracao"):
+                    send_message(
+                        sender,
+                        "Para este BMW preciso de confirmar a configuração 😊\n\n"
+                        "Pretende:\n"
+                        "• *2+2* — 2 jantes à frente + 2 jantes atrás\n"
+                        "• *4 iguais* — as 4 jantes com a mesma medida"
+                    )
+                    return "EVENT_RECEIVED", 200
                 if not dados.get("tamanho"):
                     send_message(
                         sender,
