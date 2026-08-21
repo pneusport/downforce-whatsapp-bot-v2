@@ -156,16 +156,18 @@ def marcar_mensagem_processada(message_id):
                 )
                 return False
 
-    except Exception as e:
+        except Exception as e:
         print(
             "ERRO DEDUP WEBHOOK - BLOQUEAR POR SEGURANÇA:",
             repr(e),
             flush=True
         )
         return False
-try:
-    init_db()
-    print("BASE DE DADOS OK", flush=True)
+
+
+init_db()
+
+
 def bmw_serie_1_a_5(dados):
     marca = str(dados.get("marca") or "").strip().lower()
     modelo = str(dados.get("modelo") or "").strip().lower()
@@ -175,20 +177,16 @@ def bmw_serie_1_a_5(dados):
 
     modelo = modelo.replace("série", "serie")
 
-    # Série 1, 2, 3, 4 ou 5
     if re.search(r"\bserie\s*[1-5]\b", modelo):
         return True
 
-    # 116d, 118d, 120i, 218d, 320d, 420i, 530d...
     if re.search(r"\b[1-5]\d{2}[a-z]*\b", modelo):
         return True
 
-    # M2, M3, M4, M5
     if re.search(r"\bm[2-5]\b", modelo):
         return True
 
     return False
-
 
 def interpretar_configuracao_bmw(texto):
     texto = texto.lower().strip()
