@@ -1751,22 +1751,43 @@ def webhook():
                 )
                 return "EVENT_RECEIVED", 200
         try:
-                dados = atualizar_dados_cliente(text, sender)
-                # Descobrir marca automaticamente pelo modelo
-                marca_auto, modelo_auto = descobrir_modelo_conhecido(text)
+            dados = atualizar_dados_cliente(text, sender)
 
-                if marca_auto:
-                    dados["marca"] = marca_auto
-                    dados["modelo"] = modelo_auto
+            # Recuperar dados já conhecidos das mensagens anteriores
+            dados_guardados = dados_clientes.get(sender, {})
 
-                if sender not in dados_clientes:
-                    dados_clientes[sender] = {}
+            for campo in ["marca", "modelo", "ano", "tamanho", "configuracao"]:
+                if not dados.get(campo) and dados_guardados.get(campo):
+                    dados[campo] = dados_guardados[campo]
 
+            # Reconhecer modelo e deduzir automaticamente a marca
+            marca_auto, modelo_auto = descobrir_modelo_conhecido(text)
+
+            if marca_auto:
+                dados["marca"] = marca_auto
+                dados["modelo"] = modelo_auto
+
+                dados_clientes.setdefault(sender, {})
                 dados_clientes[sender]["marca"] = marca_auto
                 dados_clientes[sender]["modelo"] = modelo_auto
 
                 print(
                     f"MODELO RECONHECIDO: {modelo_auto} -> {marca_auto}",
+                    flush=True
+                )
+
+                # Reconhecer também uma marca escrita sozinha
+                marca_escrita = descobrir_marca_conhecida(text)
+
+                if marca_escrita:
+                    
+                    dados["marca"] = marca_escrita
+
+                    dados_clientes.setdefault(sender, {})
+                    dados_clientes[sender]["marca"] = marca_escrita
+
+                    print(
+                    f"MARCA RECONHECIDA: {marca_escrita}",
                     flush=True
                 )
                 # Ver se o cliente respondeu 2+2 ou 4 iguais
