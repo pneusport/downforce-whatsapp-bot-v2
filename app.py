@@ -1218,7 +1218,6 @@ def enviar_jantes_site(sender, dados):
             "Perfeito 👍 Vou enviar apenas opções para *4 jantes iguais*."
         )
     # Remover jantes/imagens duplicadas antes de enviar
-    imagens_enviadas = set()
     contador = 0
 
     for jante in todas_jantes:
@@ -1263,6 +1262,7 @@ def enviar_jantes_site(sender, dados):
 
         # Depois de enviar todas as opções, fazer apenas esta pergunta
     if contador > 0:
+        time.sleep(2)
         send_message(
             sender,
             "Gostou de alguma destas opções? 😊\n\n"
