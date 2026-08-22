@@ -158,6 +158,7 @@ MODELOS_CONHECIDOS = {
 
 
 def normalizar_texto_carro(texto):
+    texto = str(texto or "")
     texto = unicodedata.normalize("NFD", texto.lower())
 
     texto = "".join(
@@ -1575,7 +1576,19 @@ def webhook():
             "boa tarde",
             "boa noite"
         ]
-
+        if texto_lower in [
+            "obrigado",
+            "obrigada",
+            "obg",
+            "muito obrigado",
+            "muito obrigada",
+            "thanks"
+        ]:
+            send_message(
+                sender,
+                "De nada 😊 Estamos disponíveis!"
+            )
+            return "EVENT_RECEIVED", 200
         if texto_lower in cumprimentos:
             send_message(
                 sender,
@@ -1857,8 +1870,8 @@ def webhook():
                     return "EVENT_RECEIVED", 200
 
             # Verificar se este veículo precisa de configuração 2+2 / 4 iguais
-            marca_norm = normalizar_texto_carro(dados.get("marca", ""))
-            modelo_norm = normalizar_texto_carro(dados.get("modelo", ""))
+            marca_norm = normalizar_texto_carro(dados.get("marca") or "")
+            modelo_norm = normalizar_texto_carro(dados.get("modelo") or "")
 
             mercedes_configuracao = (
                 marca_norm in ["mercedes", "mercedes benz"]
