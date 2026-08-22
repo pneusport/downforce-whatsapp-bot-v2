@@ -95,13 +95,22 @@ MODELOS_CONHECIDOS = {
     "ateca": ("SEAT", "Ateca"),
     "arona": ("SEAT", "Arona"),
 
-    # Mercedes
+    # MERCEDES
+    "mercedes a": ("MERCEDES-BENZ", "Classe A"),
+    "mercedes classe a": ("MERCEDES-BENZ", "Classe A"),
     "classe a": ("MERCEDES-BENZ", "Classe A"),
+
+    "mercedes b": ("MERCEDES-BENZ", "Classe B"),
+    "mercedes classe b": ("MERCEDES-BENZ", "Classe B"),
+    "classe b": ("MERCEDES-BENZ", "Classe B"),
+
+    "mercedes c": ("MERCEDES-BENZ", "Classe C"),
+    "mercedes classe c": ("MERCEDES-BENZ", "Classe C"),
     "classe c": ("MERCEDES-BENZ", "Classe C"),
+
+    "mercedes e": ("MERCEDES-BENZ", "Classe E"),
+    "mercedes classe e": ("MERCEDES-BENZ", "Classe E"),
     "classe e": ("MERCEDES-BENZ", "Classe E"),
-    "cla": ("MERCEDES-BENZ", "CLA"),
-    "gla": ("MERCEDES-BENZ", "GLA"),
-    "glc": ("MERCEDES-BENZ", "GLC"),
 
     # Opel
     "corsa": ("OPEL", "Corsa"),
@@ -1725,22 +1734,19 @@ def webhook():
                 marca_auto, modelo_auto = descobrir_modelo_conhecido(text)
 
                 if marca_auto:
-                    if not dados.get("marca"):
-                        dados["marca"] = marca_auto
+                    dados["marca"] = marca_auto
+                    dados["modelo"] = modelo_auto
 
-                    if not dados.get("modelo"):
-                        dados["modelo"] = modelo_auto
+                if sender not in dados_clientes:
+                    dados_clientes[sender] = {}
 
-                    if sender not in dados_clientes:
-                        dados_clientes[sender] = {}
+                dados_clientes[sender]["marca"] = marca_auto
+                dados_clientes[sender]["modelo"] = modelo_auto
 
-                    dados_clientes[sender]["marca"] = dados["marca"]
-                    dados_clientes[sender]["modelo"] = dados["modelo"]
-
-                    print(
-                        f"MODELO RECONHECIDO: {modelo_auto} -> {marca_auto}",
-                        flush=True
-                    )
+                print(
+                    f"MODELO RECONHECIDO: {modelo_auto} -> {marca_auto}",
+                    flush=True
+                )
                 # Ver se o cliente respondeu 2+2 ou 4 iguais
                 configuracao_bmw = interpretar_configuracao_bmw(texto_lower)
 
