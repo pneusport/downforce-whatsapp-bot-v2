@@ -1352,22 +1352,21 @@ def enviar_jantes_site(sender, dados):
         )
         return
 
-    variantes = resolver_modelos_site(
-        marca,
-        modelo,
-        int(ano)
+variantes = resolver_modelos_site(
+    marca,
+    modelo,
+    int(ano)
+)
+todas_jantes = []
+vistos = set()
+
+for variante in variantes:
+    jantes = buscar_jantes_site(
+        marca.upper(),
+        variante["modelo"],
+        variante["intervalo"],
+        tamanho
     )
-        todas_jantes = []
-    vistos = set()
-
-    for variante in variantes:
-        jantes = buscar_jantes_site(
-            marca.upper(),
-            variante["modelo"],
-            variante["intervalo"],
-            tamanho
-        )
-
         # Filtrar configuração escolhida pelo cliente
         if configuracao == "2+2":
             jantes = [
@@ -1418,7 +1417,7 @@ def enviar_jantes_site(sender, dados):
             "2 jantes à frente + 2 jantes atrás."
         )
 
-    elif configuracao == "4_iguais":
+    elif configuracao in ["4 iguais", "4_iguais"]:
         send_message(
             sender,
             "Perfeito 👍 Vou enviar apenas opções para *4 jantes iguais*."
