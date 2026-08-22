@@ -1578,6 +1578,44 @@ def webhook():
 
         text = message["text"]["body"].strip()
         texto_lower = text.lower().strip()
+        # Cliente estava a pedir contacto do comercial
+        estado_cliente = dados_clientes.get(sender, {}).get("estado")
+
+        if estado_cliente == "aguarda_comercial":
+            respostas_comercial = [
+            "sim",
+            "sim envia",
+            "envia",
+            "manda",
+            "manda contacto",
+            "envia contacto",
+            "falar com comercial",
+            "comercial",
+            "quero falar com comercial"
+         ]
+
+        if texto_lower in respostas_comercial:
+            numero_comercial = COMERCIAL_WHATSAPP
+
+            if numero_comercial:
+                numero_limpo = "".join(
+                    c for c in numero_comercial
+                    if c.isdigit()
+                )
+
+                send_message(
+                    sender,
+                    "Claro 😊 Pode falar diretamente com um dos nossos comerciais aqui:\n"
+                    f"https://wa.me/{numero_limpo}"
+                )
+        else:
+            send_message(
+                sender,
+                "Claro 😊 Um dos nossos comerciais irá ajudá-lo com o preço."
+            )
+
+        dados_clientes[sender]["estado"] = None
+        return "EVENT_RECEIVED", 200
         # Cumprimentos - responder e terminar
         cumprimentos = [
             "olá",
@@ -1652,6 +1690,8 @@ def webhook():
         )
 
         if pedido_preco:
+            dados_clientes.setdefault(sender, {})
+            dados_clientes[sender]["estado"] = "aguarda_comercial"
             send_message(
                 sender,
                 "Para informações sobre preços é necessário falar com um dos nossos comerciais 😊\n\n"
