@@ -1352,13 +1352,13 @@ def enviar_jantes_site(sender, dados):
         )
         return
 
-variantes = resolver_modelos_site(
-    marca,
-    modelo,
-    int(ano)
-)
-todas_jantes = []
-vistos = set()
+    variantes = resolver_modelos_site(
+        marca,
+        modelo,
+        int(ano)
+    ) 
+    todas_jantes = []
+    vistos = set()
 
     for variante in variantes:
         jantes = buscar_jantes_site(
