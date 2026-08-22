@@ -995,7 +995,7 @@ def resolver_modelos_site(marca, modelo_cliente, ano):
         utils_url,
         params={
             "a": "veiculos-modelos",
-            "marca": marca.upper()
+            "marca": marca_site.upper()
         },
         headers=headers_ajax,
         timeout=20
