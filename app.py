@@ -1183,7 +1183,8 @@ Responde APENAS em JSON válido:
     return encontrados    
 def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
     base = "https://store.downforce.pt"
-
+    if normalizar_texto_carro(marca) in ["mercedes benz", "mercedes"]:
+        marca_site = "MERCEDES"
     session = requests.Session()
 
     session.headers.update({
@@ -1191,7 +1192,7 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
     })
 
     params = {
-        "marca_vei": marca,
+        "marca_vei": marca_site,
         "modelo_vei": modelo,
         "ano_vei": intervalo_ano
     }
