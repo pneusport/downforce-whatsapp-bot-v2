@@ -1852,31 +1852,39 @@ def webhook():
                     )
                     return "EVENT_RECEIVED", 200
 
-                # BMW Série 1-5 ou Mercedes Classe C/E/S
-                precisa_configuracao = (
-                    bmw_serie_1_a_5(dados)
-                    or mercedes_precisa_configuracao(dados)
+            # Verificar se este veículo precisa de configuração 2+2 / 4 iguais
+            marca_norm = normalizar_texto_carro(dados.get("marca", ""))
+            modelo_norm = normalizar_texto_carro(dados.get("modelo", ""))
+
+            mercedes_configuracao = (
+                marca_norm in ["mercedes", "mercedes benz"]
+                and modelo_norm in ["classe c", "classe e", "classe s"]
+            )
+
+            precisa_configuracao = (
+                bmw_serie_1_a_5(dados)
+                or mercedes_configuracao
+            )
+
+            if precisa_configuracao and not dados.get("configuracao"):
+                send_message(
+                    sender,
+                    "Para este veículo preciso de confirmar a configuração 😊\n\n"
+                    "Pretende:\n"
+                    "• *2+2* – 2 jantes à frente + 2 jantes atrás\n"
+                    "• *4 iguais* – as 4 jantes com a mesma medida"
                 )
-
-                if precisa_configuracao and not dados.get("configuracao"):
-                    send_message(
-                        sender,
-                        "Para este veículo preciso de confirmar a configuração 😊\n\n"
-                        "Pretende:\n"
-                        "• *2+2* — 2 jantes à frente + 2 jantes atrás\n"
-                        "• *4 iguais* — as 4 jantes com a mesma medida"
-                    )
-                    return "EVENT_RECEIVED", 200
-
-                if not dados.get("tamanho"):
-                    send_message(
-                        sender,
-                        'Ótimo 😊 Que tamanho de jante pretende? Por exemplo: 15", 16", 17", 18"...'
-                    )
-                    return "EVENT_RECEIVED", 200
-
-                enviar_jantes_site(sender, dados)
                 return "EVENT_RECEIVED", 200
+
+            if not dados.get("tamanho"):
+                send_message(
+                    sender,
+                    'Ótimo 😊 Que tamanho de jante pretende? Por exemplo: 15", 16", 17", 18"...'
+                )
+                return "EVENT_RECEIVED", 200
+
+            enviar_jantes_site(sender, dados)
+            return "EVENT_RECEIVED", 200
 
         except Exception as e:
             print(
