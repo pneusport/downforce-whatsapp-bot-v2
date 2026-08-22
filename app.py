@@ -172,7 +172,29 @@ def normalizar_texto_carro(texto):
 
 def descobrir_modelo_conhecido(texto):
     texto_normalizado = normalizar_texto_carro(texto)
-
+    
+    marcas = {
+        "mercedes": "MERCEDES-BENZ",
+        "mercedes benz": "MERCEDES-BENZ",
+        "bmw": "BMW",
+        "audi": "AUDI",
+        "volkswagen": "VOLKSWAGEN",
+        "vw": "VOLKSWAGEN",
+        "renault": "RENAULT",
+        "peugeot": "PEUGEOT",
+        "seat": "SEAT",
+        "cupra": "CUPRA",
+        "opel": "OPEL",
+        "ford": "FORD",
+        "nissan": "NISSAN",
+        "toyota": "TOYOTA",
+        "honda": "HONDA",
+        "skoda": "SKODA",
+        "hyundai": "HYUNDAI",
+        "kia": "KIA",
+        "dacia": "DACIA",
+        "volvo": "VOLVO"
+    }
     for alias in sorted(
         MODELOS_CONHECIDOS.keys(),
         key=len,
