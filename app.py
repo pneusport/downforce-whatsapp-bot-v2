@@ -1372,12 +1372,6 @@ def enviar_jantes_site(sender, dados):
         if not imagem:
             continue
 
-        if imagem in imagens_enviadas:
-            print(f"IMAGEM DUPLICADA IGNORADA: {imagem}", flush=True)
-            continue
-
-        imagens_enviadas.add(imagem)
-
         if contador >= 25:
             break
 
