@@ -35,8 +35,151 @@ PALAVRAS_PRECO = [
 client = OpenAI()
 conversas = {}
 dados_clientes = {}
-conversas = {}
-dados_clientes = {}
+
+
+MODELOS_CONHECIDOS = {
+    # BMW
+    "serie 1": ("BMW", "Serie 1"),
+    "serie 2": ("BMW", "Serie 2"),
+    "serie 3": ("BMW", "Serie 3"),
+    "serie 4": ("BMW", "Serie 4"),
+    "serie 5": ("BMW", "Serie 5"),
+    "serie 7": ("BMW", "Serie 7"),
+    "x1": ("BMW", "X1"),
+    "x2": ("BMW", "X2"),
+    "x3": ("BMW", "X3"),
+    "x4": ("BMW", "X4"),
+    "x5": ("BMW", "X5"),
+    "x6": ("BMW", "X6"),
+
+    # Audi
+    "a1": ("AUDI", "A1"),
+    "a3": ("AUDI", "A3"),
+    "a4": ("AUDI", "A4"),
+    "a5": ("AUDI", "A5"),
+    "a6": ("AUDI", "A6"),
+    "a7": ("AUDI", "A7"),
+    "a8": ("AUDI", "A8"),
+    "q2": ("AUDI", "Q2"),
+    "q3": ("AUDI", "Q3"),
+    "q5": ("AUDI", "Q5"),
+    "q7": ("AUDI", "Q7"),
+    "q8": ("AUDI", "Q8"),
+
+    # Volkswagen
+    "golf": ("VOLKSWAGEN", "Golf"),
+    "polo": ("VOLKSWAGEN", "Polo"),
+    "passat": ("VOLKSWAGEN", "Passat"),
+    "tiguan": ("VOLKSWAGEN", "Tiguan"),
+    "t roc": ("VOLKSWAGEN", "T-Roc"),
+    "t cross": ("VOLKSWAGEN", "T-Cross"),
+
+    # Renault
+    "clio": ("RENAULT", "Clio"),
+    "megane": ("RENAULT", "Megane"),
+    "captur": ("RENAULT", "Captur"),
+    "kadjar": ("RENAULT", "Kadjar"),
+    "arkana": ("RENAULT", "Arkana"),
+
+    # Peugeot
+    "208": ("PEUGEOT", "208"),
+    "308": ("PEUGEOT", "308"),
+    "508": ("PEUGEOT", "508"),
+    "2008": ("PEUGEOT", "2008"),
+    "3008": ("PEUGEOT", "3008"),
+    "5008": ("PEUGEOT", "5008"),
+
+    # Seat
+    "ibiza": ("SEAT", "Ibiza"),
+    "leon": ("SEAT", "Leon"),
+    "ateca": ("SEAT", "Ateca"),
+    "arona": ("SEAT", "Arona"),
+
+    # Mercedes
+    "classe a": ("MERCEDES-BENZ", "Classe A"),
+    "classe c": ("MERCEDES-BENZ", "Classe C"),
+    "classe e": ("MERCEDES-BENZ", "Classe E"),
+    "cla": ("MERCEDES-BENZ", "CLA"),
+    "gla": ("MERCEDES-BENZ", "GLA"),
+    "glc": ("MERCEDES-BENZ", "GLC"),
+
+    # Opel
+    "corsa": ("OPEL", "Corsa"),
+    "astra": ("OPEL", "Astra"),
+    "mokka": ("OPEL", "Mokka"),
+
+    # Ford
+    "focus": ("FORD", "Focus"),
+    "fiesta": ("FORD", "Fiesta"),
+    "kuga": ("FORD", "Kuga"),
+
+    # Nissan
+    "qashqai": ("NISSAN", "Qashqai"),
+    "juke": ("NISSAN", "Juke"),
+
+    # Toyota
+    "yaris": ("TOYOTA", "Yaris"),
+    "corolla": ("TOYOTA", "Corolla"),
+    "rav4": ("TOYOTA", "RAV4"),
+
+    # Honda
+    "civic": ("HONDA", "Civic"),
+    "jazz": ("HONDA", "Jazz"),
+
+    # Skoda
+    "octavia": ("SKODA", "Octavia"),
+    "fabia": ("SKODA", "Fabia"),
+    "superb": ("SKODA", "Superb"),
+
+    # Hyundai
+    "tucson": ("HYUNDAI", "Tucson"),
+    "kona": ("HYUNDAI", "Kona"),
+    "i20": ("HYUNDAI", "i20"),
+    "i30": ("HYUNDAI", "i30"),
+
+    # Kia
+    "sportage": ("KIA", "Sportage"),
+    "ceed": ("KIA", "Ceed"),
+    "stonic": ("KIA", "Stonic"),
+
+    # Dacia
+    "sandero": ("DACIA", "Sandero"),
+    "duster": ("DACIA", "Duster"),
+}
+
+
+def normalizar_texto_carro(texto):
+    texto = unicodedata.normalize("NFD", texto.lower())
+
+    texto = "".join(
+        c for c in texto
+        if unicodedata.category(c) != "Mn"
+    )
+
+    texto = re.sub(r"[^a-z0-9]+", " ", texto)
+
+    return " ".join(texto.split())
+
+
+def descobrir_modelo_conhecido(texto):
+    texto_normalizado = normalizar_texto_carro(texto)
+
+    for alias in sorted(
+        MODELOS_CONHECIDOS.keys(),
+        key=len,
+        reverse=True
+    ):
+        alias_normalizado = normalizar_texto_carro(alias)
+
+        if re.search(
+            rf"(?<!\w){re.escape(alias_normalizado)}(?!\w)",
+            texto_normalizado
+        ):
+            marca, modelo = MODELOS_CONHECIDOS[alias]
+            return marca, modelo
+
+    return None, None
+
 def init_db():
     if not DATABASE_URL:
         print("DATABASE_URL não configurada", flush=True)
@@ -1345,198 +1488,7 @@ def verify_webhook():
 
 
 @app.route("/webhook", methods=["POST"])
-MODELOS_CONHECIDOS = {
-    # BMW
-    "serie 1": ("BMW", "Serie 1"),
-    "serie 2": ("BMW", "Serie 2"),
-    "serie 3": ("BMW", "Serie 3"),
-    "serie 4": ("BMW", "Serie 4"),
-    "serie 5": ("BMW", "Serie 5"),
-    "serie 7": ("BMW", "Serie 7"),
-    "x1": ("BMW", "X1"),
-    "x2": ("BMW", "X2"),
-    "x3": ("BMW", "X3"),
-    "x4": ("BMW", "X4"),
-    "x5": ("BMW", "X5"),
-    "x6": ("BMW", "X6"),
 
-    # AUDI
-    "a1": ("AUDI", "A1"),
-    "a3": ("AUDI", "A3"),
-    "a4": ("AUDI", "A4"),
-    "a5": ("AUDI", "A5"),
-    "a6": ("AUDI", "A6"),
-    "a7": ("AUDI", "A7"),
-    "a8": ("AUDI", "A8"),
-    "q2": ("AUDI", "Q2"),
-    "q3": ("AUDI", "Q3"),
-    "q5": ("AUDI", "Q5"),
-    "q7": ("AUDI", "Q7"),
-    "q8": ("AUDI", "Q8"),
-    "tt": ("AUDI", "TT"),
-
-    # VOLKSWAGEN
-    "golf": ("VOLKSWAGEN", "Golf"),
-    "polo": ("VOLKSWAGEN", "Polo"),
-    "passat": ("VOLKSWAGEN", "Passat"),
-    "tiguan": ("VOLKSWAGEN", "Tiguan"),
-    "t roc": ("VOLKSWAGEN", "T-Roc"),
-    "t cross": ("VOLKSWAGEN", "T-Cross"),
-    "touran": ("VOLKSWAGEN", "Touran"),
-    "caddy": ("VOLKSWAGEN", "Caddy"),
-
-    # SEAT
-    "ibiza": ("SEAT", "Ibiza"),
-    "leon": ("SEAT", "Leon"),
-    "ateca": ("SEAT", "Ateca"),
-    "arona": ("SEAT", "Arona"),
-    "tarraco": ("SEAT", "Tarraco"),
-
-    # CUPRA
-    "formentor": ("CUPRA", "Formentor"),
-    "born": ("CUPRA", "Born"),
-    "terramar": ("CUPRA", "Terramar"),
-
-    # RENAULT
-    "clio": ("RENAULT", "Clio"),
-    "megane": ("RENAULT", "Megane"),
-    "captur": ("RENAULT", "Captur"),
-    "kadjar": ("RENAULT", "Kadjar"),
-    "arkana": ("RENAULT", "Arkana"),
-    "austral": ("RENAULT", "Austral"),
-    "scenic": ("RENAULT", "Scenic"),
-    "twingo": ("RENAULT", "Twingo"),
-
-    # PEUGEOT
-    "208": ("PEUGEOT", "208"),
-    "308": ("PEUGEOT", "308"),
-    "508": ("PEUGEOT", "508"),
-    "2008": ("PEUGEOT", "2008"),
-    "3008": ("PEUGEOT", "3008"),
-    "5008": ("PEUGEOT", "5008"),
-    "rifter": ("PEUGEOT", "Rifter"),
-
-    # OPEL
-    "corsa": ("OPEL", "Corsa"),
-    "astra": ("OPEL", "Astra"),
-    "insignia": ("OPEL", "Insignia"),
-    "mokka": ("OPEL", "Mokka"),
-    "grandland": ("OPEL", "Grandland"),
-    "crossland": ("OPEL", "Crossland"),
-
-    # FORD
-    "focus": ("FORD", "Focus"),
-    "fiesta": ("FORD", "Fiesta"),
-    "puma": ("FORD", "Puma"),
-    "kuga": ("FORD", "Kuga"),
-    "mondeo": ("FORD", "Mondeo"),
-
-    # MERCEDES
-    "classe a": ("MERCEDES-BENZ", "Classe A"),
-    "classe b": ("MERCEDES-BENZ", "Classe B"),
-    "classe c": ("MERCEDES-BENZ", "Classe C"),
-    "classe e": ("MERCEDES-BENZ", "Classe E"),
-    "classe s": ("MERCEDES-BENZ", "Classe S"),
-    "cla": ("MERCEDES-BENZ", "CLA"),
-    "gla": ("MERCEDES-BENZ", "GLA"),
-    "glb": ("MERCEDES-BENZ", "GLB"),
-    "glc": ("MERCEDES-BENZ", "GLC"),
-    "gle": ("MERCEDES-BENZ", "GLE"),
-
-    # NISSAN
-    "qashqai": ("NISSAN", "Qashqai"),
-    "juke": ("NISSAN", "Juke"),
-    "x trail": ("NISSAN", "X-Trail"),
-    "micra": ("NISSAN", "Micra"),
-
-    # TOYOTA
-    "yaris": ("TOYOTA", "Yaris"),
-    "corolla": ("TOYOTA", "Corolla"),
-    "auris": ("TOYOTA", "Auris"),
-    "rav4": ("TOYOTA", "RAV4"),
-    "c hr": ("TOYOTA", "C-HR"),
-    "aygo": ("TOYOTA", "Aygo"),
-
-    # HONDA
-    "civic": ("HONDA", "Civic"),
-    "jazz": ("HONDA", "Jazz"),
-    "cr v": ("HONDA", "CR-V"),
-    "hr v": ("HONDA", "HR-V"),
-
-    # SKODA
-    "octavia": ("SKODA", "Octavia"),
-    "fabia": ("SKODA", "Fabia"),
-    "superb": ("SKODA", "Superb"),
-    "kodiaq": ("SKODA", "Kodiaq"),
-    "karoq": ("SKODA", "Karoq"),
-    "kamiq": ("SKODA", "Kamiq"),
-
-    # HYUNDAI
-    "tucson": ("HYUNDAI", "Tucson"),
-    "kona": ("HYUNDAI", "Kona"),
-    "i20": ("HYUNDAI", "i20"),
-    "i30": ("HYUNDAI", "i30"),
-    "santa fe": ("HYUNDAI", "Santa Fe"),
-
-    # KIA
-    "sportage": ("KIA", "Sportage"),
-    "ceed": ("KIA", "Ceed"),
-    "stonic": ("KIA", "Stonic"),
-    "niro": ("KIA", "Niro"),
-    "sorento": ("KIA", "Sorento"),
-    "picanto": ("KIA", "Picanto"),
-
-    # DACIA
-    "sandero": ("DACIA", "Sandero"),
-    "duster": ("DACIA", "Duster"),
-    "jogger": ("DACIA", "Jogger"),
-
-    # VOLVO
-    "xc40": ("VOLVO", "XC40"),
-    "xc60": ("VOLVO", "XC60"),
-    "xc90": ("VOLVO", "XC90"),
-    "v40": ("VOLVO", "V40"),
-    "v60": ("VOLVO", "V60"),
-    "s60": ("VOLVO", "S60"),
-
-    # ALFA ROMEO
-    "giulietta": ("ALFA ROMEO", "Giulietta"),
-    "giulia": ("ALFA ROMEO", "Giulia"),
-    "stelvio": ("ALFA ROMEO", "Stelvio"),
-    "tonale": ("ALFA ROMEO", "Tonale"),
-}
-
-
-def normalizar_texto_carro(texto):
-    texto = unicodedata.normalize("NFD", texto.lower())
-    texto = "".join(
-        c for c in texto
-        if unicodedata.category(c) != "Mn"
-    )
-
-    texto = re.sub(r"[^a-z0-9]+", " ", texto)
-    return " ".join(texto.split())
-
-
-def descobrir_modelo_conhecido(texto):
-    texto_normalizado = normalizar_texto_carro(texto)
-
-    # Ver os nomes maiores primeiro
-    for alias in sorted(
-        MODELOS_CONHECIDOS.keys(),
-        key=len,
-        reverse=True
-    ):
-        alias_normalizado = normalizar_texto_carro(alias)
-
-        if re.search(
-            rf"(?<!\w){re.escape(alias_normalizado)}(?!\w)",
-            texto_normalizado
-        ):
-            marca, modelo = MODELOS_CONHECIDOS[alias]
-            return marca, modelo
-
-    return None, None
 def webhook():
     global PALAVRAS_PRECO
     
@@ -1779,22 +1731,22 @@ def webhook():
                 marca_auto, modelo_auto = descobrir_modelo_conhecido(text)
 
                 if marca_auto:
-                if not dados.get("marca"):
-                    dados["marca"] = marca_auto
+                    if not dados.get("marca"):
+                        dados["marca"] = marca_auto
 
-                if not dados.get("modelo"):
-                    dados["modelo"] = modelo_auto
+                    if not dados.get("modelo"):
+                        dados["modelo"] = modelo_auto
 
-                if sender not in dados_clientes:
-                    dados_clientes[sender] = {}
+                    if sender not in dados_clientes:
+                        dados_clientes[sender] = {}
 
-                dados_clientes[sender]["marca"] = dados["marca"]
-                dados_clientes[sender]["modelo"] = dados["modelo"]
+                    dados_clientes[sender]["marca"] = dados["marca"]
+                    dados_clientes[sender]["modelo"] = dados["modelo"]
 
-                print(
-                    f"MODELO RECONHECIDO: {modelo_auto} -> {marca_auto}",
-                    flush=True
-                )
+                    print(
+                        f"MODELO RECONHECIDO: {modelo_auto} -> {marca_auto}",
+                        flush=True
+                    )
                 # Ver se o cliente respondeu 2+2 ou 4 iguais
                 configuracao_bmw = interpretar_configuracao_bmw(texto_lower)
 
