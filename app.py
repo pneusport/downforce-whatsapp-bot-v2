@@ -1828,31 +1828,43 @@ def webhook():
                     f"MARCA RECONHECIDA: {marca_escrita}",
                     flush=True
                 )
-                # Ver se o cliente respondeu 2+2 ou 4 iguais
-                configuracao_bmw = interpretar_configuracao_bmw(texto_lower)
+            # Ver se o cliente respondeu 2+2 ou 4 iguais
+            configuracao_bmw = None
 
-                if configuracao_bmw:
-                    dados_clientes.setdefault(sender, {})
-                    dados_clientes[sender]["configuracao"] = configuracao_bmw
-                    dados["configuracao"] = configuracao_bmw
+            texto_config = texto_lower.replace(" ", "").strip()
 
-                    # Recuperar configuração previamente escolhida
-                configuracao_guardada = dados_clientes.get(sender, {}).get("configuracao")
+            if texto_config in [
+                "2+2",
+                "2x2"
+            ]:
+                configuracao_bmw = "2+2"
 
-                if configuracao_guardada:
-                    dados["configuracao"] = configuracao_guardada
+            elif texto_config in [
+                "4iguais",
+                "4igual",
+                "quatroiguais"
+            ]:
+                configuracao_bmw = "4 iguais"
 
-                marca_encontrada = None
+            # Se o cliente acabou de escolher a configuração, guardar
+            if configuracao_bmw:
+                dados_clientes.setdefault(sender, {})
 
-                if not dados.get("marca") and dados.get("modelo"):
-                    marca_encontrada = descobrir_marca_pelo_modelo(
-                        dados["modelo"],
-                    dados.get("ano")
-                 )
+                dados_clientes[sender]["configuracao"] = configuracao_bmw
+                dados["configuracao"] = configuracao_bmw
 
-                if marca_encontrada:
-                    dados["marca"] = marca_encontrada
-                    dados_clientes[sender]["marca"] = marca_encontrada
+                print(
+                    f"CONFIGURACAO GUARDADA: {configuracao_bmw} para {sender}",
+                    flush=True
+                )
+
+            # Se já tinha escolhido anteriormente, recuperar
+            configuracao_guardada = dados_clientes.get(
+                sender, {}
+            ).get("configuracao")
+
+            if configuracao_guardada:
+                dados["configuracao"] = configuracao_guardada
 
                 if not dados.get("marca"):
                     send_message(
