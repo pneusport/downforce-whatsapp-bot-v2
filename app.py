@@ -1019,7 +1019,11 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
         soup = BeautifulSoup(html, "html.parser")
 
         blocos = soup.select(".prod-list-col")
-
+        print(
+            f"CATALOGO DEBUG | URL={r.url} | STATUS={r.status_code} | "
+            f"BLOCOS_ENCONTRADOS={len(blocos)}",
+            flush=True
+        )
         novos = 0
 
         for bloco in blocos:
