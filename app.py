@@ -1360,13 +1360,14 @@ variantes = resolver_modelos_site(
 todas_jantes = []
 vistos = set()
 
-for variante in variantes:
-    jantes = buscar_jantes_site(
-        marca.upper(),
-        variante["modelo"],
-        variante["intervalo"],
-        tamanho
-    )
+    for variante in variantes:
+        jantes = buscar_jantes_site(
+            marca.upper(),
+            variante["modelo"],
+            variante["intervalo"],
+            tamanho
+        )
+
         # Filtrar configuração escolhida pelo cliente
         if configuracao == "2+2":
             jantes = [
@@ -1379,10 +1380,10 @@ for variante in variantes:
                 jante for jante in jantes
                 if not jante.get("composto", False)
             ]
+
         for jante in jantes:
             nome = (jante.get("nome") or "").strip().lower()
             imagem = (jante.get("imagem") or "").strip()
-
             # Usar o nome como identificador principal.
             # Se não houver nome, usar a imagem.
             chave = nome if nome else imagem
