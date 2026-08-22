@@ -1126,7 +1126,7 @@ Responde APENAS em JSON válido:
             utils_url,
             params={
                 "a": "veiculos-anos",
-                "marca": marca.upper(),
+                "marca": marca_site.upper()
                 "modelo": modelo_site
             },
             headers=headers_ajax,
