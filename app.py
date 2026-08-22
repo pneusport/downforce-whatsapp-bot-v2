@@ -1184,8 +1184,14 @@ Responde APENAS em JSON válido:
     return encontrados    
 def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
     base = "https://store.downforce.pt"
+
+    # Por defeito, usar a própria marca
+    marca_site = marca
+
+    # O catálogo chama MERCEDES à MERCEDES-BENZ
     if normalizar_texto_carro(marca) in ["mercedes benz", "mercedes"]:
         marca_site = "MERCEDES"
+
     session = requests.Session()
 
     session.headers.update({
