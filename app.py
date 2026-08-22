@@ -1333,7 +1333,6 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
 
     return resultados
 
-
 def enviar_jantes_site(sender, dados):
     marca = dados["marca"]
     modelo = dados["modelo"]
@@ -1358,18 +1357,29 @@ def enviar_jantes_site(sender, dados):
         modelo,
         int(ano)
     )
-        # BMW - filtrar configuração escolhida pelo cliente
+        todas_jantes = []
+    vistos = set()
+
+    for variante in variantes:
+        jantes = buscar_jantes_site(
+            marca.upper(),
+            variante["modelo"],
+            variante["intervalo"],
+            tamanho
+        )
+
+        # Filtrar configuração escolhida pelo cliente
         if configuracao == "2+2":
             jantes = [
                 jante for jante in jantes
                 if jante.get("composto") is True
             ]
 
-        elif configuracao == "4_iguais":
+        elif configuracao in ["4 iguais", "4_iguais"]:
             jantes = [
                 jante for jante in jantes
                 if not jante.get("composto", False)
-            ]    
+            ]
         for jante in jantes:
             nome = (jante.get("nome") or "").strip().lower()
             imagem = (jante.get("imagem") or "").strip()
