@@ -1422,7 +1422,7 @@ def enviar_jantes_site(sender, dados):
         if not imagem:
             continue
 
-        if contador >= 25:
+        if contador >= 30:
             break
 
         response = send_image(
@@ -1446,7 +1446,7 @@ def enviar_jantes_site(sender, dados):
                 pass
 
         contador += 1
-        time.sleep(0.8)
+        time.sleep(1)
 
         # Depois de enviar todas as opções, fazer apenas esta pergunta
     if contador > 0:
