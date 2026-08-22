@@ -226,28 +226,28 @@ def descobrir_marca_conhecida(texto):
         ):
             return marca
     return None
-    def init_db():
-        if not DATABASE_URL:
-            print("DATABASE_URL não configurada", flush=True)
-            return
+def init_db():
+    if not DATABASE_URL:
+        print("DATABASE_URL não configurada", flush=True)
+        return
 
-        try:
-            with psycopg.connect(DATABASE_URL) as conn:
+    try:
+        with psycopg.connect(DATABASE_URL) as conn:
 
-                conn.execute("""
-                    CREATE TABLE IF NOT EXISTS conversas (
-                        id SERIAL PRIMARY KEY,
-                        telefone TEXT UNIQUE NOT NULL,
-                        nome TEXT,
-                        marca TEXT,
-                        modelo TEXT,
-                        ano TEXT,
-                        tamanho TEXT,
-                        ia_ativa BOOLEAN DEFAULT TRUE,
-                        estado TEXT DEFAULT 'novo',
-                        ultima_mensagem TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS conversas (
+                    id SERIAL PRIMARY KEY,
+                    telefone TEXT UNIQUE NOT NULL,
+                    nome TEXT,
+                    marca TEXT,
+                    modelo TEXT,
+                    ano TEXT,
+                    tamanho TEXT,
+                    ia_ativa BOOLEAN DEFAULT TRUE,
+                    estado TEXT DEFAULT 'novo',
+                    ultima_mensagem TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
 
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS mensagens (
@@ -270,7 +270,7 @@ def descobrir_marca_conhecida(texto):
 
             conn.commit()
 
-        print("BASE DE DADOS OK", flush=True)
+            print("BASE DE DADOS OK", flush=True)
 
     except Exception as e:
         print("ERRO INIT DB:", repr(e), flush=True)
