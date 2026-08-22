@@ -1337,32 +1337,27 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
 def enviar_jantes_site(sender, dados):
     marca = dados["marca"]
     modelo = dados["modelo"]
-    ano = dados["ano"]
+    ano = dados.get("ano")
     tamanho = dados["tamanho"]
     configuracao = dados.get("configuracao")
+
+    # Segurança: nunca pesquisar sem ano
+    if not ano:
+        print(
+            f"PESQUISA CANCELADA: ano em falta para {sender}",
+            flush=True
+        )
+        send_message(
+            sender,
+            "Perfeito 👍 E de que ano é o carro?"
+        )
+        return
+
     variantes = resolver_modelos_site(
         marca,
         modelo,
         int(ano)
     )
-
-    if not variantes:
-        send_message(
-            sender,
-            "Não encontrei opções disponíveis para esse veículo no catálogo."
-        )
-        return
-
-    todas_jantes = []
-    vistos = set()
-    
-    for variante in variantes:
-        jantes = buscar_jantes_site(
-            marca.upper(),
-            variante["modelo"],
-            variante["intervalo"],
-            tamanho
-        )
         # BMW - filtrar configuração escolhida pelo cliente
         if configuracao == "2+2":
             jantes = [
