@@ -987,7 +987,10 @@ def resolver_modelos_site(marca, modelo_cliente, ano):
     # ---------------------------------------
     # OBTER TODOS OS MODELOS REAIS DA MARCA
     # ---------------------------------------
+    marca_site = marca
 
+    if normalizar_texto_carro(marca) in ["mercedes benz", "mercedes"]:
+        marca_site = "MERCEDES"
     r = session.get(
         utils_url,
         params={
