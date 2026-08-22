@@ -172,7 +172,27 @@ def normalizar_texto_carro(texto):
 
 def descobrir_modelo_conhecido(texto):
     texto_normalizado = normalizar_texto_carro(texto)
-    
+
+    for alias in sorted(
+        MODELOS_CONHECIDOS.keys(),
+        key=len,
+        reverse=True
+    ):
+        alias_normalizado = normalizar_texto_carro(alias)
+
+        if re.search(
+            rf"(?<!\w){re.escape(alias_normalizado)}(?!\w)",
+            texto_normalizado
+        ):
+            marca, modelo = MODELOS_CONHECIDOS[alias]
+            return marca, modelo
+
+    return None, None
+
+
+def descobrir_marca_conhecida(texto):
+    texto_normalizado = normalizar_texto_carro(texto)
+
     marcas = {
         "mercedes": "MERCEDES-BENZ",
         "mercedes benz": "MERCEDES-BENZ",
@@ -193,25 +213,20 @@ def descobrir_modelo_conhecido(texto):
         "hyundai": "HYUNDAI",
         "kia": "KIA",
         "dacia": "DACIA",
-        "volvo": "VOLVO"
+        "volvo": "VOLVO",
+        "alfa romeo": "ALFA ROMEO"
     }
-    for alias in sorted(
-        MODELOS_CONHECIDOS.keys(),
-        key=len,
-        reverse=True
-    ):
+
+    for alias, marca in marcas.items():
         alias_normalizado = normalizar_texto_carro(alias)
 
         if re.search(
             rf"(?<!\w){re.escape(alias_normalizado)}(?!\w)",
             texto_normalizado
         ):
-            marca, modelo = MODELOS_CONHECIDOS[alias]
-            return marca, modelo
-
-    return None, None
-
-def init_db():
+            return marca
+    return None
+    def init_db():
     if not DATABASE_URL:
         print("DATABASE_URL não configurada", flush=True)
         return
