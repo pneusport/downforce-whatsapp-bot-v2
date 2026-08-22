@@ -1088,7 +1088,7 @@ def buscar_jantes_site(marca, modelo, intervalo_ano, tamanho):
 
             resultados.append({
                 "nome": nome.replace("JANTE ", "", 1),
-                "imagem": imagem_url,
+                "imagem": image_url,
                 "pcd": pcd_match.group(0) if pcd_match else None,
                 "cb": cb_match.group(1) if cb_match else None,
                 "et": et_match.group(1) if et_match else None,
