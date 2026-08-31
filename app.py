@@ -1890,7 +1890,7 @@ def webhook():
                 "quatroiguais",
                 "4xiguais"
             ]:
-            configuracao_bmw = "4_iguais"
+                configuracao_bmw = "4_iguais"
 
             # Se o cliente acabou de escolher a configuração, guardar
             if configuracao_bmw:
