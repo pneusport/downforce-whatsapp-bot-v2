@@ -1942,12 +1942,11 @@ def webhook():
                 and modelo_norm in ["classe c", "classe e", "classe s"]
             )
 
-            precisa_configuracao = (
-                bmw_serie_1_a_5(dados)
+            precisa_configuracao = marca_norm in [
+                "bmw",
                 "mercedes",
                 "mercedes benz"
-                "MB"
-            )
+            [
 
             if precisa_configuracao and not dados.get("configuracao"):
                 send_message(
