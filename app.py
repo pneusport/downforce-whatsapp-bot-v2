@@ -1375,7 +1375,7 @@ def enviar_jantes_site(sender, dados):
                 if jante.get("composto") is True
             ]
 
-        elif configuracao in ["4 iguais", "4_iguais"]:
+        elif configuracao == "4_iguais":
             jantes = [
                 jante for jante in jantes
                 if not jante.get("composto", False)
@@ -1887,9 +1887,10 @@ def webhook():
             elif texto_config in [
                 "4iguais",
                 "4igual",
-                "quatroiguais"
+                "quatroiguais",
+                "4xiguais"
             ]:
-                configuracao_bmw = "4 iguais"
+            configuracao_bmw = "4_iguais"
 
             # Se o cliente acabou de escolher a configuração, guardar
             if configuracao_bmw:
@@ -1943,7 +1944,9 @@ def webhook():
 
             precisa_configuracao = (
                 bmw_serie_1_a_5(dados)
-                or mercedes_configuracao
+                "mercedes",
+                "mercedes benz"
+                "MB"
             )
 
             if precisa_configuracao and not dados.get("configuracao"):
@@ -1959,7 +1962,7 @@ def webhook():
             if not dados.get("tamanho"):
                 send_message(
                     sender,
-                    'Ótimo 😊 Que tamanho de jante pretende? Por exemplo: 15", 16", 17", 18"...'
+                    'Ótimo 😊 Que tamanho de jante pretende? Por exemplo: 16", 17", 18"...'
                 )
                 return "EVENT_RECEIVED", 200
 
