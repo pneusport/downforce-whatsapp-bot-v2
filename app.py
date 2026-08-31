@@ -1946,7 +1946,7 @@ def webhook():
                 "bmw",
                 "mercedes",
                 "mercedes benz"
-            [
+            ]
 
             if precisa_configuracao and not dados.get("configuracao"):
                 send_message(
