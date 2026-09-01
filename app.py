@@ -1578,7 +1578,30 @@ def webhook():
 
         text = message["text"]["body"].strip()
         texto_lower = text.lower().strip()
-    
+        # ==========================================
+        # PEDIDO DE PREÇO / COMPRA -> ASSISTENTE
+        # ==========================================
+
+        texto_norm = normalizar_texto_carro(text or "")
+
+        gatilhos_comercial = [
+            "qual o preco",
+            "preco",
+            "quero",
+            "manda vir",
+            "manda",
+            "separa"
+        ]
+
+        if any(gatilho in texto_norm for gatilho in gatilhos_comercial):
+            send_message(
+                sender,
+                "Claro 😊 Para saber o preço ou avançar com a compra, "
+                "pode falar diretamente com o nosso assistente aqui:\n\n"
+                "https://wa.me/351910459268"
+            )
+
+            return "EVENT_RECEIVED", 200
         # Cumprimentos - responder e terminar
         cumprimentos = [
             "olá",
@@ -1954,12 +1977,22 @@ def webhook():
                 and modelo_norm in ["classe c", "classe e", "classe s"]
             )
 
-            precisa_configuracao = marca_norm in [
-                "bmw",
-                "mercedes",
-                "mercedes benz"
-            ]
+            # Classe A, Classe B e CLA são sempre 4 iguais
+            mercedes_4_iguais = (
+                marca_norm in ["mercedes", "mercedes benz"]
+                and modelo_norm in ["classe a", "classe b", "cla"]
+            )
 
+            if mercedes_4_iguais:
+                dados["configuracao"] = "4_iguais"
+                dados_clientes.setdefault(sender, {})
+                dados_clientes[sender]["configuracao"] = "4_iguais"
+
+            # Só perguntar configuração nos BMW e Mercedes C/E/S
+            precisa_configuracao = (
+            marca_norm == "bmw"
+            or mercedes_configuracao
+            )
             if precisa_configuracao and not dados.get("configuracao"):
                 send_message(
                     sender,
