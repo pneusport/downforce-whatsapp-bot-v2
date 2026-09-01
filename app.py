@@ -1581,8 +1581,7 @@ def webhook():
         # Cliente estava a pedir contacto do comercial
         estado_cliente = dados_clientes.get(sender, {}).get("estado")
 
-        if estado_cliente == "aguarda_comercial":
-            respostas_comercial = [
+        respostas_comercial = [
             "sim",
             "sim envia",
             "envia",
@@ -1592,9 +1591,9 @@ def webhook():
             "falar com comercial",
             "comercial",
             "quero falar com comercial"
-         ]
+        ]
 
-        if texto_lower in respostas_comercial:
+        if estado_cliente == "aguarda_comercial" and texto_lower in respostas_comercial:
             numero_comercial = COMERCIAL_WHATSAPP
 
             if numero_comercial:
