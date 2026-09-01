@@ -1458,7 +1458,7 @@ def enviar_jantes_site(sender, dados):
                 pass
 
         contador += 1
-        time.sleep(1.2)
+        time.sleep(1.4)
 
         # Depois de enviar todas as opções, fazer apenas esta pergunta
     if contador > 0:
