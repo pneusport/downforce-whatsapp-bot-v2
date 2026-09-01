@@ -1834,57 +1834,55 @@ def webhook():
                 )
                 return "EVENT_RECEIVED", 200
         try:
-        # ==================================================
-        # PASSAR CLIENTE PARA O ASSISTENTE / ATENDIMENTO HUMANO
-        # ==================================================
+            # ==================================================
+            # PASSAR CLIENTE PARA O ASSISTENTE / ATENDIMENTO HUMANO
+            # ==================================================
 
-        texto_norm = normalizar_texto_carro(text or "")
+            texto_norm = normalizar_texto_carro(text or "")
 
-        gatilhos_assistente = [
-            "separa",
-            "manda vir",
-            "manda",
-            "quero",
-            "preco"
-        ]
+            gatilhos_assistente = [
+                "separa",
+                "manda vir",
+                "manda",
+                "quero",
+                "preco"
+            ]
+    
+            # Se já está em atendimento humano, o bot não responde
+            estado_atual = dados_clientes.get(sender, {})
 
-        # Se já está em atendimento humano, o bot não responde
-        estado_atual = dados_clientes.get(sender, {})
+            if estado_atual.get("modo_humano"):
+                return "EVENT_RECEIVED", 200
 
-        if estado_atual.get("modo_humano"):
-            return "EVENT_RECEIVED", 200
+            # Detetar intenção de compra ou pedido de preço
+            if any(gatilho in texto_norm for gatilho in gatilhos_assistente):
 
-        # Detetar intenção de compra ou pedido de preço
-        if any(gatilho in texto_norm for gatilho in gatilhos_assistente):
+                dados_clientes.setdefault(sender, {})
+                dados_clientes[sender]["modo_humano"] = True
 
-            dados_clientes.setdefault(sender, {})
-            dados_clientes[sender]["modo_humano"] = True
+                # Dados que já sabemos sobre o cliente
+                info_cliente = dados_clientes.get(sender, {})
 
-            # Dados que já sabemos sobre o cliente
-            info_cliente = dados_clientes.get(sender, {})
-
-            send_message(
+                send_message(
                 sender,
                 "Perfeito 👍 Vou passar o seu pedido ao nosso assistente comercial. "
                 "Ele continuará o atendimento consigo."
-            )
+                )
 
-            send_message(
-                "351910459268",
-                f"🔔 NOVO PEDIDO PARA ATENDIMENTO\n\n"
-                f"📱 Cliente: {sender}\n"
-                f"💬 Mensagem: {text}\n\n"
-                f"🚗 Marca: {info_cliente.get('marca') or '-'}\n"
-                f"🚘 Modelo: {info_cliente.get('modelo') or '-'}\n"
-                f"📅 Ano: {info_cliente.get('ano') or '-'}\n"
-                f"🛞 Tamanho: {info_cliente.get('tamanho') or '-'}\n"
-                f"⚙️ Configuração: {info_cliente.get('configuracao') or '-'}"
-            )
+                send_message(
+                    "351910459268",
+                    f"🔔 NOVO PEDIDO PARA ATENDIMENTO\n\n"
+                    f"📱 Cliente: {sender}\n"
+                    f"💬 Mensagem: {text}\n\n"
+                    f"🚗 Marca: {info_cliente.get('marca') or '-'}\n"
+                    f"🚘 Modelo: {info_cliente.get('modelo') or '-'}\n"
+                    f"📅 Ano: {info_cliente.get('ano') or '-'}\n"
+                    f"🛞 Tamanho: {info_cliente.get('tamanho') or '-'}\n"
+                    f"⚙️ Configuração: {info_cliente.get('configuracao') or '-'}"
+                )
 
-            return "EVENT_RECEIVED", 200
+                return "EVENT_RECEIVED", 200
 
-
-        dados = atualizar_dados_cliente(text, sender)
             dados = atualizar_dados_cliente(text, sender)
 
             # Recuperar dados já conhecidos das mensagens anteriores
